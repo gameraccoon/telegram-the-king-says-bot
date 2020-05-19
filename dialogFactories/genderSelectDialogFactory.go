@@ -94,7 +94,7 @@ func (factory *genderSelectDialogFactory) createVariants(trans i18n.TranslateFun
 
 func (factory *genderSelectDialogFactory) MakeDialog(userId int64, trans i18n.TranslateFunc, staticData *processing.StaticProccessStructs, customData interface{}) *dialog.Dialog {
 	return &dialog.Dialog{
-		Text:     trans("select_language"),
+		Text:     trans("select_gender"),
 		Variants: factory.createVariants(trans),
 	}
 }
