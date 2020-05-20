@@ -1,18 +1,42 @@
 package staticData
 
+import (
+	cedar "github.com/iohub/ahocorasick"
+)
+
 type LanguageData struct {
 	Key string
 	Name string
 }
 
-type SpyfallLocation struct {
-	LocationId string
-	Roles []string
+type PlaceholderInfo struct {
+	Values []string
+	Matcher *cedar.Matcher
+}
+
+type PlaceholderInfos struct {
+	Male PlaceholderInfo
+	Female PlaceholderInfo
+	Common PlaceholderInfo
 }
 
 type StaticConfiguration struct {
 	AvailableLanguages []LanguageData
 	DefaultLanguage string
 	ExtendedLog bool
-	SpyfallLocations []SpyfallLocation
+	Placeholders PlaceholderInfos
+}
+
+func compilePlaceholder(placeholder *PlaceholderInfo) {
+	placeholder.Matcher = cedar.NewMatcher()
+	for i, value := range placeholder.Values {
+		placeholder.Matcher.Insert([]byte(value), i)
+	}
+	placeholder.Matcher.Compile()
+}
+
+func (placeholders *PlaceholderInfos) Compile() {
+	compilePlaceholder(&placeholders.Female)
+	compilePlaceholder(&placeholders.Male)
+	compilePlaceholder(&placeholders.Common)
 }

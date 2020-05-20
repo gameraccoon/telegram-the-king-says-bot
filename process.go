@@ -50,15 +50,6 @@ func sendNumbersToPlayers(data *processing.ProcessData) {
 	}
 }
 
-func sendNumbersToPlayersDivided(data *processing.ProcessData) {
-	sessionId, isInSession := staticFunctions.GetDb(data.Static).GetUserSession(data.UserId)
-	if isInSession {
-		staticFunctions.GiveRandomNumbersToPlayersDividedByGender(data, sessionId)
-	} else {
-		data.SendMessage(data.Trans("no_session_error"))
-	}
-}
-
 func helpCommand(data *processing.ProcessData) {
 	data.SendMessage(data.Trans("help_info"))
 }
@@ -75,8 +66,7 @@ func makeUserCommandProcessors() ProcessorFuncMap {
 		"settings": settingsCommand,
 		"help":     helpCommand,
 		"cancel":   cancelCommand,
-		"number":   sendNumbersToPlayers,
-		"numberd":  sendNumbersToPlayersDivided,
+		"numbers":  sendNumbersToPlayers,
 	}
 }
 
@@ -135,7 +125,7 @@ func processPlainMessage(data *processing.ProcessData, dialogManager *dialogMana
 	if !success {
 		sessionId, isInSession := staticFunctions.GetDb(data.Static).GetUserSession(data.UserId)
 		if isInSession {
-			staticFunctions.SendMessageToOthers(data, sessionId, data.Message)
+			staticFunctions.SendAdvancedCommand(data, sessionId, data.Message)
 		} else {
 			data.SendMessage(data.Trans("help_info"))
 		}

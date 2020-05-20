@@ -36,8 +36,9 @@
 	"gender_female": { "other": "Girl" },
 	"gender_male": { "other": "Boy" },
 	"gender_both": { "other": "Both" },
+	"gender_any": { "other": "Player" },
 
-	"player_number_msg": { "other": "You are #{{.Number}}" },
-	"female_number": { "other": "You are Girl #{{.Number}}" },
-	"male_number": { "other": "You are Boy #{{.Number}}" }
+	"player_number_msg": { "other": "You are player #{{.Number}}" },
+	"female_number": { "other": "Girl #{{.Number}}" },
+	"male_number": { "other": "Boy #{{.Number}}" }
 }

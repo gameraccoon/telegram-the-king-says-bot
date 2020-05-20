@@ -145,3 +145,13 @@ func GetGenderNameFromId(gender int, trans i18n.TranslateFunc) string {
 		return trans("gender_none")
 	}
 }
+
+func GetGenderPlaceholderFromId(gender int, trans i18n.TranslateFunc) string {
+	if gender == 1 {
+		return trans("gender_female")
+	} else if gender == 2 {
+		return trans("gender_male")
+	} else {
+		return trans("gender_any")
+	}
+}

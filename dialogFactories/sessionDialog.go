@@ -43,12 +43,6 @@ func MakeSessionDialogFactory() dialogFactory.DialogFactory {
 				process: sendNumbersToPlayer,
 				rowId:2,
 			},
-			sessionVariantPrototype{
-				id: "numbdiv",
-				textId: "send_divided_numbers",
-				process: sendNumberToPlayersDivided,
-				rowId:2,
-			},
 		},
 	})
 }
@@ -72,11 +66,6 @@ func disconnectSession(sessionId int64, data *processing.ProcessData) bool {
 
 func sendNumbersToPlayer(sessionId int64, data *processing.ProcessData) bool {
 	staticFunctions.GiveRandomNumbersToPlayers(data, sessionId)
-	return true
-}
-
-func sendNumberToPlayersDivided(sessionId int64, data *processing.ProcessData) bool {
-	staticFunctions.GiveRandomNumbersToPlayersDividedByGender(data, sessionId)
 	return true
 }
 

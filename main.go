@@ -39,6 +39,17 @@ func loadConfig(path string) (config static.StaticConfiguration, err error) {
 		dec := json.NewDecoder(strings.NewReader(jsonString))
 		err = dec.Decode(&config)
 	}
+
+	if err == nil {
+		jsonString, err := getFileStringContent("./data/placeholders.json")
+		if err == nil {
+			dec := json.NewDecoder(strings.NewReader(jsonString))
+			err = dec.Decode(&config.Placeholders)
+			if err == nil {
+				config.Placeholders.Compile()
+			}
+		}
+	}
 	return
 }
 
