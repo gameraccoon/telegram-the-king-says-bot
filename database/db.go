@@ -47,8 +47,12 @@ func ConnectDb(path string) (database *SpyBotDb, err error) {
 		// session related data
 		",current_session INTEGER" +
 		",current_session_message INTEGER" +
-		",theme TEXT" +
-		",is_theme_revealed INTEGER" +
+		")")
+
+	database.db.Exec("CREATE TABLE IF NOT EXISTS" +
+		" session_commands(id INTEGER NOT NULL PRIMARY KEY" +
+		",session_id INTEGER NOT NULL" +
+		",command TEXT NOT NULL" +
 		")")
 
 	database.db.Exec("CREATE UNIQUE INDEX IF NOT EXISTS" +
@@ -447,12 +451,13 @@ func (database *SpyBotDb) LeaveSession(userId int64) (sessionId int64, wasInSess
 	database.mutex.Lock()
 	defer database.mutex.Unlock()
 
-	database.db.Exec(fmt.Sprintf("UPDATE OR ROLLBACK users SET current_session=NULL, theme=NULL, is_theme_revealed=NULL WHERE id=%d", userId))
+	database.db.Exec(fmt.Sprintf("UPDATE OR ROLLBACK users SET current_session=NULL WHERE id=%d", userId))
 
 	// delete session if it's empty
 	database.mutex.Unlock()
 	if database.GetUsersCountInSession(sessionId) == 0 {
 		database.mutex.Lock()
+		database.db.Exec(fmt.Sprintf("DELETE FROM session_commands WHERE session_id=%d", sessionId))
 		database.db.Exec(fmt.Sprintf("DELETE FROM sessions WHERE id=%d", sessionId))
 		database.mutex.Unlock()
 	}
@@ -547,27 +552,56 @@ func (database *SpyBotDb) GetTokenFromSessionId(sessionId int64) (token string, 
 	return
 }
 
-func (database *SpyBotDb) SetUserTheme(userId int64, theme string) {
+func (database *SpyBotDb) AddSessionSuggestedCommand(sessionId int64, command string) {
 	database.mutex.Lock()
 	defer database.mutex.Unlock()
 
-	database.db.Exec(fmt.Sprintf("UPDATE OR ROLLBACK users SET theme='%s' WHERE id=%d", dbBase.SanitizeString(theme), userId))
+	database.db.Exec(fmt.Sprintf("INSERT INTO session_commands (session_id, command) VALUES (%d, '%s')", sessionId, dbBase.SanitizeString(command)))
+}
+
+func (database *SpyBotDb) PopRandomSessionSuggestedCommand(sessionId int64) (command string, isSucceeded bool) {
+	database.mutex.Lock()
+	defer database.mutex.Unlock()
+
+	rows, err := database.db.Query(fmt.Sprintf("SELECT id, command FROM session_commands WHERE session_id=%d ORDER BY RANDOM() LIMIT 1", sessionId))
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
+	if rows.Next() {
+		var rowId int64
+		err := rows.Scan(&rowId, &command)
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+		rows.Close()
+
+		database.db.Exec(fmt.Sprintf("DELETE FROM session_commands WHERE id=%d", rowId))
+
+		isSucceeded = true
+	} else {
+		err = rows.Err()
+		if err != nil {
+			log.Fatal(err)
+		}
+		rows.Close()
+	}
 
 	return
 }
 
-func (database *SpyBotDb) GetUserTheme(userId int64) (theme string) {
+func (database *SpyBotDb) GetSessionSuggestedCommandCount(sessionId int64) (commandsCount int64) {
 	database.mutex.Lock()
 	defer database.mutex.Unlock()
 
-	rows, err := database.db.Query(fmt.Sprintf("SELECT theme FROM users WHERE id=%d AND theme IS NOT NULL", userId))
+	rows, err := database.db.Query(fmt.Sprintf("SELECT COUNT(*) FROM session_commands WHERE session_id=%d", sessionId))
 	if err != nil {
 		log.Fatal(err.Error())
 	}
 	defer rows.Close()
 
 	if rows.Next() {
-		err := rows.Scan(&theme)
+		err := rows.Scan(&commandsCount)
 		if err != nil {
 			log.Fatal(err.Error())
 		}
@@ -577,35 +611,6 @@ func (database *SpyBotDb) GetUserTheme(userId int64) (theme string) {
 			log.Fatal(err)
 		}
 	}
-
-	return
-}
-
-func (database *SpyBotDb) IsThemeRevealed(userId int64) (isRevealed bool) {
-	database.mutex.Lock()
-	defer database.mutex.Unlock()
-
-	rows, err := database.db.Query(fmt.Sprintf("SELECT 1 FROM users WHERE id=%d AND is_theme_revealed = 1 LIMIT 1", userId))
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-	defer rows.Close()
-
-	isRevealed = rows.Next();
-
-	return
-}
-
-func (database *SpyBotDb) SetThemeRevealed(userId int64, isRevealed bool) {
-	database.mutex.Lock()
-	defer database.mutex.Unlock()
-
-	isRevealedInt := 0
-	if isRevealed {
-		isRevealedInt = 1
-	}
-
-	database.db.Exec(fmt.Sprintf("UPDATE OR ROLLBACK users SET is_theme_revealed=%d WHERE id=%d", isRevealedInt, userId))
 
 	return
 }

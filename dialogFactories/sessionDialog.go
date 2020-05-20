@@ -38,9 +38,15 @@ func MakeSessionDialogFactory() dialogFactory.DialogFactory {
 				rowId:1,
 			},
 			sessionVariantPrototype{
-				id: "numb",
-				textId: "send_numbers",
-				process: sendNumbersToPlayer,
+				id: "sugg",
+				textId: "suggest_command",
+				process: suggestCommand,
+				rowId:2,
+			},
+			sessionVariantPrototype{
+				id: "reve",
+				textId: "reveal_command",
+				process: revealCommand,
 				rowId:2,
 			},
 		},
@@ -64,8 +70,27 @@ func disconnectSession(sessionId int64, data *processing.ProcessData) bool {
 	return true
 }
 
-func sendNumbersToPlayer(sessionId int64, data *processing.ProcessData) bool {
-	staticFunctions.GiveRandomNumbersToPlayers(data, sessionId)
+func suggestCommand(sessionId int64, data *processing.ProcessData) bool {
+	data.SendMessage(data.Trans("suggest_command_msg"))
+	data.Static.SetUserStateTextProcessor(data.UserId, &processing.AwaitingTextProcessorData{
+		ProcessorId: "suggestCommand",
+		AdditionalId: sessionId,
+	})
+	return true
+}
+
+func revealCommand(sessionId int64, data *processing.ProcessData) bool {
+	db := staticFunctions.GetDb(data.Static)
+
+	command, isSucceeded := db.PopRandomSessionSuggestedCommand(sessionId)
+	staticFunctions.UpdateSessionDialogs(sessionId, data.Static)
+
+	if isSucceeded {
+		staticFunctions.SendAdvancedCommand(data, sessionId, command)
+	} else {
+		data.SendMessage(data.Trans("no_suggested_commands"))
+	}
+
 	return true
 }
 
@@ -99,6 +124,7 @@ func (factory *sessionDialogFactory) MakeDialog(userId int64, trans i18n.Transla
 
 	translationMap := map[string]interface{} {
 		"Participants": countInSession,
+		"Commands":     db.GetSessionSuggestedCommandCount(sessionId),
 	}
 
 	sessionToken, isFound := db.GetTokenFromSessionId(sessionId)

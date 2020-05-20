@@ -10,6 +10,7 @@ func GetTextInputProcessorManager() dialogManager.TextInputProcessorManager {
 	return dialogManager.TextInputProcessorManager {
 		Processors : dialogManager.TextProcessorsMap {
 			"changeName" : processChangeName,
+			"suggestCommand" : processSuggestCommand,
 		},
 	}
 }
@@ -32,5 +33,13 @@ func processChangeName(additionalId int64, data *processing.ProcessData) bool {
 	data.Static.SetUserStateTextProcessor(data.UserId, &processing.AwaitingTextProcessorData{
 		ProcessorId: "changeName",
 	})
+	return true
+}
+
+func processSuggestCommand(additionalId int64, data *processing.ProcessData) bool {
+	db := staticFunctions.GetDb(data.Static)
+	db.AddSessionSuggestedCommand(additionalId, data.Message)
+	staticFunctions.UpdateSessionDialogs(additionalId, data.Static)
+	data.SendMessage(data.Trans("suggested_command_sent"))
 	return true
 }

@@ -318,7 +318,7 @@ func TestSessionMessageId(t *testing.T) {
 }
 
 
-func TestGameTheme(t *testing.T) {
+func TestSuggestedCommands(t *testing.T) {
 	assert := require.New(t)
 	db := createDbAndConnect(t)
 	defer clearDb()
@@ -330,14 +330,30 @@ func TestGameTheme(t *testing.T) {
 
 	userId1 := db.GetUserId(123, "", "")
 
-	testTheme := "testTheme"
+	testCommand1 := "test'asd"
+	testCommand2 := "tefaasd'a"
 
-	assert.False(db.IsThemeRevealed(userId1))
-	db.SetUserTheme(userId1, testTheme)
-	assert.False(db.IsThemeRevealed(userId1))
-	db.SetThemeRevealed(userId1, true)
-	assert.True(db.IsThemeRevealed(userId1))
-	assert.Equal(testTheme, db.GetUserTheme(userId1))
-	db.SetThemeRevealed(userId1, false)
-	assert.False(db.IsThemeRevealed(userId1))
+	sessionId, _, _ := db.CreateSession(userId1)
+
+	assert.Equal(int64(0), db.GetSessionSuggestedCommandCount(sessionId))
+	
+	{
+		_, isSucceeded := db.PopRandomSessionSuggestedCommand(sessionId)
+		assert.False(isSucceeded)
+	}
+
+	db.AddSessionSuggestedCommand(sessionId, testCommand1)
+	db.AddSessionSuggestedCommand(sessionId, testCommand2)
+
+	assert.Equal(int64(2), db.GetSessionSuggestedCommandCount(sessionId))
+
+	{
+		command, isSucceeded := db.PopRandomSessionSuggestedCommand(sessionId)
+		assert.True(isSucceeded)
+		assert.True(command == testCommand1 || command == testCommand2)
+		assert.Equal(int64(1), db.GetSessionSuggestedCommandCount(sessionId))
+	}
+
+	db.LeaveSession(userId1)
+	assert.Equal(int64(0), db.GetSessionSuggestedCommandCount(sessionId))
 }
