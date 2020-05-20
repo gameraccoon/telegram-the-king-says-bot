@@ -23,8 +23,12 @@ func startCommand(data *processing.ProcessData) {
 		data.SendMessage(data.Trans("start_message"))
 	}
 
-	sessionCommand(data)
-	data.Static.SetUserStateTextProcessor(data.UserId, nil)
+	isSetupInProgress := staticFunctions.FirstSetUpStep1(data)
+
+	if !isSetupInProgress {
+		sessionCommand(data)
+		data.Static.SetUserStateTextProcessor(data.UserId, nil)
+	}
 }
 
 func sessionCommand(data *processing.ProcessData) {

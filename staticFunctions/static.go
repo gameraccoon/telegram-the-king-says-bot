@@ -155,3 +155,33 @@ func GetGenderPlaceholderFromId(gender int, trans i18n.TranslateFunc) string {
 		return trans("gender_any")
 	}
 }
+
+func FirstSetUpStep1(data *processing.ProcessData) (inProgress bool) {
+	db := GetDb(data.Static)
+	if db.GetUserGender(data.UserId) == 0 {
+		data.SubstitudeMessage(data.Trans("enter_name"))
+		data.Static.SetUserStateTextProcessor(data.UserId, &processing.AwaitingTextProcessorData{
+			ProcessorId:  "changeName",
+			AdditionalId: data.UserId,
+		})
+		inProgress = true
+	}
+	return
+}
+
+func FirstSetUpStep2(data *processing.ProcessData) {
+	db := GetDb(data.Static)
+	if db.GetUserGender(data.UserId) == 0 {
+		data.SendDialog(data.Static.MakeDialogFn("gc", data.UserId, data.Trans, data.Static, nil))
+	}
+}
+
+func FirstSetUpStep3(data *processing.ProcessData) {
+	_, isInSession := GetDb(data.Static).GetUserSession(data.UserId)
+	if isInSession {
+		SendSessionDialog(data)
+	} else {
+		data.SendDialog(data.Static.MakeDialogFn("ns", data.UserId, data.Trans, data.Static, nil))
+	}
+	data.Static.SetUserStateTextProcessor(data.UserId, nil)
+}
