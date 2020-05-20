@@ -93,6 +93,7 @@ type placeholderMatch struct {
 	len int
 	matchType int
 	userIndex int
+	name string
 }
 
 func appendMatches(matches *[]placeholderMatch, sequence []byte, placeholder *static.PlaceholderInfo, matchType int) {
@@ -183,16 +184,32 @@ func SendAdvancedCommand(data *processing.ProcessData, sessionId int64, command 
 
 	db := GetDb(data.Static)
 
+	// fill the participating users
 	participatingUsers := make([]participatingUser, 0)
-
 	for _, userId := range userIds {
 		participatingUsers = append(participatingUsers, participatingUser{userId, db.GetUserGender(userId), db.GetUserName(userId)})
 	}
 
-	for _, match := range matches {
-		sequence = []byte(string(sequence[:match.at-match.len+1]) + getAndRemoveParticipatingUserName(&participatingUsers, match.matchType) + string(sequence[match.at+1:]))
+	// fill the names for the matches with specified genders
+	for i, match := range matches {
+		if match.matchType != 0 {
+			matches[i].name = getAndRemoveParticipatingUserName(&participatingUsers, match.matchType)
+		}
 	}
 
+	// fill the names for all the others
+	for i, match := range matches {
+		if len(match.name) == 0 {
+			matches[i].name = getAndRemoveParticipatingUserName(&participatingUsers, match.matchType)	
+		}
+	}
+
+	// replace names in the string
+	for _, match := range matches {
+		sequence = []byte(string(sequence[:match.at-match.len+1]) + match.name + string(sequence[match.at+1:]))
+	}
+
+	// transmit the message to all players in the session
 	for _, userId := range userIds {
 		chatId := db.GetChatId(userId)
 		data.Static.Chat.SendMessage(chatId, string(sequence), 0)
