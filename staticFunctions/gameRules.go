@@ -5,6 +5,7 @@ import (
 	static "github.com/gameraccoon/telegram-the-king-says-bot/staticData"
 	"math/rand"
 	"sort"
+	"strconv"
 )
 
 func getUsersInSessionOrReportFailure(data *processing.ProcessData, sessionId int64) (userIds []int64, success bool) {
@@ -139,15 +140,8 @@ func getAndRemoveParticipatingUserName(userIds *[]participatingUser, matchType i
 	return "error"
 }
 
-func SendAdvancedCommand(data *processing.ProcessData, sessionId int64, command string) {
-	userIds, success := getUsersInSessionOrReportFailure(data, sessionId)
-
-	if !success {
-		return
-	}
-
-	sequence := []byte(command)
-	placeholders := getPlaceholders(data.Static)
+func findMatches(staticData *processing.StaticProccessStructs, sequence []byte) []placeholderMatch {
+	placeholders := getPlaceholders(staticData)
 	matches := make([]placeholderMatch, 0)
 
 	appendMatches(&matches, sequence, &placeholders.Common, 0)
@@ -159,10 +153,29 @@ func SendAdvancedCommand(data *processing.ProcessData, sessionId int64, command 
 	})
 
 	removeIntersectedMatches(&matches)
+	return matches
+}
 
-	/*for _, match := range matches {
-		sequence = []byte(string(sequence[:match.at-match.len+1]) + "{" + strconv.Itoa(match.matchType) + ":" + strconv.Itoa(match.userIndex) + "}" + string(sequence[match.at+1:]))
-	}*/
+func PreviewAdvancedCommand(data *processing.ProcessData, sessionId int64, command string) {
+	sequence := []byte(command)
+	matches := findMatches(data.Static, sequence)
+
+	for _, match := range matches {
+		sequence = []byte(string(sequence[:match.at-match.len+1]) + "{" + GetGenderPlaceholderFromId(match.matchType, data.Trans) + " #" + strconv.Itoa(match.userIndex + 1) + "}" + string(sequence[match.at+1:]))
+	}
+
+	data.SendMessage(string(sequence))
+}
+
+func SendAdvancedCommand(data *processing.ProcessData, sessionId int64, command string) {
+	userIds, success := getUsersInSessionOrReportFailure(data, sessionId)
+
+	if !success {
+		return
+	}
+
+	sequence := []byte(command)
+	matches := findMatches(data.Static, sequence)
 
 	rand.Shuffle(len(userIds), func(i, j int) {
 		userIds[i], userIds[j] = userIds[j], userIds[i]
