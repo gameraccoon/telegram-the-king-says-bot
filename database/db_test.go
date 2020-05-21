@@ -313,10 +313,19 @@ func TestSessionMessageId(t *testing.T) {
 	userId1 := db.GetUserId(123, "", "")
 	sessionMessageId := int64(32)
 
-	db.SetSessionMessageId(userId1, sessionMessageId)
-	assert.Equal(sessionMessageId, db.GetSessionMessageId(userId1))
-}
 
+	{
+		_, isFound := db.GetSessionMessageId(userId1)
+		assert.False(isFound)
+	}
+	db.SetSessionMessageId(userId1, sessionMessageId)
+	
+	{
+		sessionId, isFound := db.GetSessionMessageId(userId1)
+		assert.True(isFound)
+		assert.Equal(sessionMessageId, sessionId)
+	}
+}
 
 func TestSuggestedCommands(t *testing.T) {
 	assert := require.New(t)
@@ -356,4 +365,23 @@ func TestSuggestedCommands(t *testing.T) {
 
 	db.LeaveSession(userId1)
 	assert.Equal(int64(0), db.GetSessionSuggestedCommandCount(sessionId))
+}
+
+func TestFTUE(t *testing.T) {
+	assert := require.New(t)
+	db := createDbAndConnect(t)
+	defer clearDb()
+	if db == nil {
+		t.Fail()
+		return
+	}
+	defer db.Disconnect()
+
+	userId1 := db.GetUserId(123, "", "")
+
+	assert.False(db.IsUserCompletedFTUE(userId1))
+
+	db.SetUserCompletedFTUE(userId1, true)
+
+	assert.True(db.IsUserCompletedFTUE(userId1))
 }

@@ -60,5 +60,7 @@ func (factory *languageSelectDialogFactory) MakeDialog(userId int64, trans i18n.
 }
 
 func (factory *languageSelectDialogFactory) ProcessVariant(variantId string, additionalId string, data *processing.ProcessData) bool {
-	return applyNewLanguage(data, variantId)
+	isSucceeded := applyNewLanguage(data, variantId)
+	staticFunctions.FirstSetUpStep2(data)
+	return isSucceeded
 }

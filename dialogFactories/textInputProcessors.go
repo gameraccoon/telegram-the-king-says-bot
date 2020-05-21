@@ -23,7 +23,7 @@ func processChangeName(additionalId int64, data *processing.ProcessData) bool {
 			db.SetUserName(additionalId, data.Message)
 			data.SendMessage(data.Trans("name_changed"))
 
-			staticFunctions.FirstSetUpStep2(data)
+			staticFunctions.FirstSetUpStep3(data)
 			return true
 		} else {
 			data.SendMessage(data.Trans("name_too_long"))

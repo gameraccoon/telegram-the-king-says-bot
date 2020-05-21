@@ -1,5 +1,5 @@
 {
-	"start_message": { "other": "Welcome to The King Says bot that can assist you in your party plays with your friens.\nJust create a session, send invitation link, choose The King and follow his instructions.\nPress /help to see how to send commands and their syntax." },
+	"start_message": { "other": "Welcome to The King Says bot that can assist you in your party plays with your friens.\nJust create a session, send invitation link, choose The King and follow his/her instructions.\nPress /help to see how to send commands and their syntax." },
 	"select_language": { "other": "Pick your preferable language" },
 	"select_gender": { "other": "Select your gender or pick 'both' if you want to act for both genders, pick 'none' if you don't want to act in gender-specific activities" },
 	"help_info": { "other": "How to play:\n- First, create a session and invite your friends using the invitation link\n- Then choose The King (you can use /number command and choose Player #1 as The King)\n- After that King can either send the commands directly, or you can suggest commands (anonymously of course) and The King will send random ones from the suggested\n\nSyntax. Use any of these as placeholders to randomize players\n🎲,❓,❔ - a random player\n🚺,🍑,🍩,👒 - a random girl\n🚹,🍆,🍌,🎩 - a random boy\n💙/❤️ - two random players with opposite genders\n\nExample commands that you can try:\n<code>👒 kisses 🎲</code>\n<code>💙 gives massage to ❤️</code>" },
@@ -25,9 +25,9 @@
 	"invalid_name": { "other": "Enter a valid name" },
 	"name_too_long": { "other": "Name is too long, try to use a shorter one" },
 	"suggest_command": { "other": "Suggest command" },
-	"suggest_command_msg": { "other": "Type a command that will be suggested to others. Don't forget about placeholders: 🎲, 🚹, 🚺" },
-	"suggested_command_sent": { "other": "Command sent" },
-	"no_suggested_commands": { "other": "No suggested command in the list" },
+	"suggest_command_msg": { "other": "Type a command that will be suggested to others. Don't forget about placeholders:\n🎲,❓,❔ - a random player\n🚺,🍑,🍩,👒 - a random girl\n🚹,🍆,🍌,🎩 - a random boy\n💙/❤️ - two random players with opposite genders" },
+	"suggested_command_sent": { "other": "Command suggested" },
+	"no_suggested_commands": { "other": "No suggested commands in the list" },
 	"reveal_command": { "other": "Send one command" },
 
 	"gender_none": { "other": "None" },

@@ -104,7 +104,7 @@ func (factory *genderSelectDialogFactory) ProcessVariant(variantId string, addit
 	for _, variant := range factory.variants {
 		if variant.id == variantId {
 			isSucceeded := variant.process(sessionId, data)
-			staticFunctions.FirstSetUpStep3(data)
+			staticFunctions.FirstSetUpStep4(data)
 			return isSucceeded
 		}
 	}

@@ -106,8 +106,10 @@ func UpdateSessionDialogs(sessionId int64, staticData *processing.StaticProccess
 		trans := FindTransFunction(userId, staticData)
 		dialog := staticData.MakeDialogFn("se", userId, trans, staticData, nil)
 		chatId := db.GetChatId(userId)
-		messageId := db.GetSessionMessageId(userId)
-		staticData.Chat.SendDialog(chatId, dialog, messageId)
+		messageId, isFound := db.GetSessionMessageId(userId)
+		if isFound {
+			staticData.Chat.SendDialog(chatId, dialog, messageId)
+		}
 	}
 }
 
@@ -122,8 +124,6 @@ func ConnectToSession(data *processing.ProcessData, token string) (successfull b
 	if !successfullyConnected {
 		return false
 	}
-
-	SendSessionDialog(data)
 
 	UpdateSessionDialogs(sessionId, data.Static)
 
@@ -158,12 +158,8 @@ func GetGenderPlaceholderFromId(gender int, trans i18n.TranslateFunc) string {
 
 func FirstSetUpStep1(data *processing.ProcessData) (inProgress bool) {
 	db := GetDb(data.Static)
-	if db.GetUserGender(data.UserId) == 0 {
-		data.SubstitudeMessage(data.Trans("enter_name"))
-		data.Static.SetUserStateTextProcessor(data.UserId, &processing.AwaitingTextProcessorData{
-			ProcessorId:  "changeName",
-			AdditionalId: data.UserId,
-		})
+	if !db.IsUserCompletedFTUE(data.UserId) {
+		data.SendDialog(data.Static.MakeDialogFn("lc", data.UserId, data.Trans, data.Static, nil))
 		inProgress = true
 	}
 	return
@@ -171,17 +167,33 @@ func FirstSetUpStep1(data *processing.ProcessData) (inProgress bool) {
 
 func FirstSetUpStep2(data *processing.ProcessData) {
 	db := GetDb(data.Static)
-	if db.GetUserGender(data.UserId) == 0 {
-		data.SendDialog(data.Static.MakeDialogFn("gc", data.UserId, data.Trans, data.Static, nil))
+
+	if !db.IsUserCompletedFTUE(data.UserId) {
+		data.SendMessage(data.Trans("enter_name"))
+		data.Static.SetUserStateTextProcessor(data.UserId, &processing.AwaitingTextProcessorData{
+			ProcessorId:  "changeName",
+			AdditionalId: data.UserId,
+		})
 	}
 }
 
 func FirstSetUpStep3(data *processing.ProcessData) {
-	_, isInSession := GetDb(data.Static).GetUserSession(data.UserId)
-	if isInSession {
-		SendSessionDialog(data)
-	} else {
-		data.SendDialog(data.Static.MakeDialogFn("ns", data.UserId, data.Trans, data.Static, nil))
+	db := GetDb(data.Static)
+	if !db.IsUserCompletedFTUE(data.UserId) {
+		data.SendDialog(data.Static.MakeDialogFn("gc", data.UserId, data.Trans, data.Static, nil))
 	}
-	data.Static.SetUserStateTextProcessor(data.UserId, nil)
+}
+
+func FirstSetUpStep4(data *processing.ProcessData) {
+	db := GetDb(data.Static)
+	if !db.IsUserCompletedFTUE(data.UserId) {
+		_, isInSession := db.GetUserSession(data.UserId)
+		if isInSession {
+			SendSessionDialog(data)
+		} else {
+			data.SendDialog(data.Static.MakeDialogFn("ns", data.UserId, data.Trans, data.Static, nil))
+		}
+		data.Static.SetUserStateTextProcessor(data.UserId, nil)
+	}
+	db.SetUserCompletedFTUE(data.UserId, true)
 }

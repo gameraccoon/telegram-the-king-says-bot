@@ -43,6 +43,7 @@ func ConnectDb(path string) (database *SpyBotDb, err error) {
 		",name TEXT NOT NULL" +
 		",language TEXT NOT NULL" +
 		",gender INTEGER NOT NULL" +
+		",ftue_completed INTEGER NOT NULL" +
 
 		// session related data
 		",current_session INTEGER" +
@@ -119,8 +120,8 @@ func (database *SpyBotDb) GetUserId(chatId int64, userLangCode string, userName 
 	database.mutex.Lock()
 	defer database.mutex.Unlock()
 
-	database.db.Exec(fmt.Sprintf("INSERT OR IGNORE INTO users(chat_id, language, name, gender) "+
-		"VALUES (%d, '%s', '%s', 0)", chatId, userLangCode, dbBase.SanitizeString(userName)))
+	database.db.Exec(fmt.Sprintf("INSERT OR IGNORE INTO users(chat_id, language, name, gender, ftue_completed) "+
+		"VALUES (%d, '%s', '%s', 0, 0)", chatId, userLangCode, dbBase.SanitizeString(userName)))
 
 	rows, err := database.db.Query(fmt.Sprintf("SELECT id FROM users WHERE chat_id=%d", chatId))
 	if err != nil {
@@ -321,6 +322,48 @@ func (database *SpyBotDb) GetUserGender(userId int64) (gender int) {
 	return
 }
 
+func (database *SpyBotDb) SetUserCompletedFTUE(userId int64, isCompleted bool) {
+	database.mutex.Lock()
+	defer database.mutex.Unlock()
+
+	value := 0
+	if isCompleted {
+		value = 1
+	}
+
+	database.db.Exec(fmt.Sprintf("UPDATE OR ROLLBACK users SET ftue_completed='%d' WHERE id=%d", value, userId))
+}
+
+func (database *SpyBotDb) IsUserCompletedFTUE(userId int64) (isCompleted bool) {
+	database.mutex.Lock()
+	defer database.mutex.Unlock()
+
+	rows, err := database.db.Query(fmt.Sprintf("SELECT ftue_completed FROM users WHERE id=%d", userId))
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	defer rows.Close()
+
+	if rows.Next() {
+		var value int
+		err := rows.Scan(&value)
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+		if value != 0 {
+			isCompleted = true
+		}
+	} else {
+		err = rows.Err()
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.Printf("can't find ftue_completed for player %d", userId)
+	}
+
+	return
+}
+
 func (database *SpyBotDb) GetUserSession(userId int64) (sessionId int64, isInSession bool) {
 	database.mutex.Lock()
 	defer database.mutex.Unlock()
@@ -473,7 +516,7 @@ func (database *SpyBotDb) SetSessionMessageId(userId int64, messageId int64) {
 	database.db.Exec(fmt.Sprintf("UPDATE OR ROLLBACK users SET current_session_message=%d WHERE id=%d", messageId, userId))
 }
 
-func (database *SpyBotDb) GetSessionMessageId(userId int64) (messageId int64) {
+func (database *SpyBotDb) GetSessionMessageId(userId int64) (messageId int64, isFound bool) {
 	database.mutex.Lock()
 	defer database.mutex.Unlock()
 
@@ -488,6 +531,7 @@ func (database *SpyBotDb) GetSessionMessageId(userId int64) (messageId int64) {
 		if err != nil {
 			log.Fatal(err.Error())
 		}
+		isFound = true
 	} else {
 		err = rows.Err()
 		if err != nil {

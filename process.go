@@ -14,11 +14,9 @@ type ProcessorFuncMap map[string]ProcessorFunc
 func startCommand(data *processing.ProcessData) {
 	if len(data.Message) > 0 {
 		isSuccessfull := staticFunctions.ConnectToSession(data, data.Message)
-		if isSuccessfull {
-			return
+		if !isSuccessfull {
+			data.SendMessage(data.Trans("link_session_is_old"))
 		}
-
-		data.SendMessage(data.Trans("link_session_is_old"))
 	} else {
 		data.SendMessage(data.Trans("start_message"))
 	}
