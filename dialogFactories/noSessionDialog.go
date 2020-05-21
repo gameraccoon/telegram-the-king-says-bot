@@ -23,12 +23,6 @@ type noSessionDialogFactory struct {
 func MakeNoSessionDialogFactory() dialogFactory.DialogFactory {
 	return &(noSessionDialogFactory{
 		variants: []noSessionVariantPrototype{
-			/*noSessionVariantPrototype{
-				id: "connsess",
-				textId: "connect_to_session",
-				process: connectToSession,
-				rowId:2,
-			},*/
 			noSessionVariantPrototype{
 				id: "createsess",
 				textId: "create_session",
@@ -37,14 +31,6 @@ func MakeNoSessionDialogFactory() dialogFactory.DialogFactory {
 			},
 		},
 	})
-}
-
-func connectToSession(data *processing.ProcessData) bool {
-	data.Static.SetUserStateTextProcessor(data.UserId, &processing.AwaitingTextProcessorData{
-		ProcessorId: "connectSession",
-	})
-	data.SendMessage(data.Trans("send_session_id"))
-	return true
 }
 
 func createNewSession(data *processing.ProcessData) bool {
