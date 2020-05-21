@@ -10,20 +10,6 @@ import (
 	"log"
 )
 
-func getUsersInSessionOrReportFailure(data *processing.ProcessData, sessionId int64) (userIds []int64, success bool) {
-	db := GetDb(data.Static)
-
-	userIds = db.GetUsersInSession(sessionId)
-	success = true
-
-	if len(userIds) < 2 {
-		data.SendMessage(data.Trans("few_players"))
-		success = false
-	}
-
-	return
-}
-
 func sendNumbers(data *processing.ProcessData, userIds []int64) {
 	db := GetDb(data.Static)
 
@@ -69,11 +55,8 @@ func sendNumbers(data *processing.ProcessData, userIds []int64) {
 }
 
 func GiveRandomNumbersToPlayers(data *processing.ProcessData, sessionId int64) {
-	userIds, success := getUsersInSessionOrReportFailure(data, sessionId)
-
-	if !success {
-		return
-	}
+	db := GetDb(data.Static)
+	userIds := db.GetUsersInSession(sessionId)
 
 	rand.Shuffle(len(userIds), func(i, j int) { userIds[i], userIds[j] = userIds[j], userIds[i] })
 
@@ -138,8 +121,6 @@ func appendOppositeMatches(matches *[]placeholderMatch, sequence []byte, placeho
 			}
 
 			testSeq = testSeq[at+len(placeholderSeq):]
-
-			log.Printf("gen %d at %d", gender, at+(len(placeholderSeq))*userIndex)
 
 			*matches = append(*matches, placeholderMatch{
 				at:at+seqShift,
@@ -208,11 +189,8 @@ func PreviewAdvancedCommand(data *processing.ProcessData, sessionId int64, comma
 }
 
 func SendAdvancedCommand(data *processing.ProcessData, sessionId int64, command string) {
-	userIds, success := getUsersInSessionOrReportFailure(data, sessionId)
-
-	if !success {
-		return
-	}
+	db := GetDb(data.Static)
+	userIds := db.GetUsersInSession(sessionId)
 
 	sequence := []byte(command)
 	matches := findMatches(data.Static, sequence)
@@ -220,8 +198,6 @@ func SendAdvancedCommand(data *processing.ProcessData, sessionId int64, command 
 	rand.Shuffle(len(userIds), func(i, j int) {
 		userIds[i], userIds[j] = userIds[j], userIds[i]
 	})
-
-	db := GetDb(data.Static)
 
 	// fill the participating users
 	participatingUsers := make([]participatingUser, 0)
