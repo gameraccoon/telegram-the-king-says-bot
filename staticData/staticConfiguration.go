@@ -18,6 +18,7 @@ type PlaceholderInfos struct {
 	Male PlaceholderInfo
 	Female PlaceholderInfo
 	Common PlaceholderInfo
+	Opposite [2]string
 }
 
 type StaticConfiguration struct {

@@ -1,11 +1,13 @@
 package staticFunctions
 
 import (
+	"bytes"
 	"github.com/gameraccoon/telegram-bot-skeleton/processing"
 	static "github.com/gameraccoon/telegram-the-king-says-bot/staticData"
 	"math/rand"
 	"sort"
 	"strconv"
+	"log"
 )
 
 func getUsersInSessionOrReportFailure(data *processing.ProcessData, sessionId int64) (userIds []int64, success bool) {
@@ -100,18 +102,53 @@ func appendMatches(matches *[]placeholderMatch, sequence []byte, placeholder *st
 	resp := placeholder.Matcher.Match(sequence)
 	defer resp.Release()
 
-	index := 0
+	userIndex := 0
 
 	for resp.HasNext() {
 		items := resp.NextMatchItem(sequence)
 		for _, itr := range items {
 			*matches = append(*matches, placeholderMatch{
-				at:itr.At,
+				at:itr.At-itr.KLen+1,
 				len:itr.KLen,
 				matchType:matchType,
-				userIndex:index,
+				userIndex:userIndex,
 			})
-			index++
+			userIndex++
+		}
+	}
+}
+
+func appendOppositeMatches(matches *[]placeholderMatch, sequence []byte, placeholder *[2]string) {
+	var oppositeGendersIndexes [2]int
+	if rand.Intn(2) == 0 {
+		oppositeGendersIndexes = [2]int{2, 1}
+	} else {
+		oppositeGendersIndexes = [2]int{1, 2}
+	}
+
+	for placeholderIdx, gender := range oppositeGendersIndexes {
+		userIndex := 0
+		placeholderSeq := []byte(placeholder[placeholderIdx])
+		testSeq := sequence
+		seqShift := 0
+		for {
+			at := bytes.Index(testSeq, placeholderSeq)
+			if at == -1 {
+				break
+			}
+
+			testSeq = testSeq[at+len(placeholderSeq):]
+
+			log.Printf("gen %d at %d", gender, at+(len(placeholderSeq))*userIndex)
+
+			*matches = append(*matches, placeholderMatch{
+				at:at+seqShift,
+				len:len(placeholderSeq),
+				matchType:gender,
+				userIndex:userIndex,
+			})
+			userIndex++
+			seqShift+=at+len(placeholderSeq)
 		}
 	}
 }
@@ -148,6 +185,7 @@ func findMatches(staticData *processing.StaticProccessStructs, sequence []byte) 
 	appendMatches(&matches, sequence, &placeholders.Common, 0)
 	appendMatches(&matches, sequence, &placeholders.Female, 1)
 	appendMatches(&matches, sequence, &placeholders.Male, 2)
+	appendOppositeMatches(&matches, sequence, &placeholders.Opposite)
 
 	sort.Slice(matches, func(i, j int) bool {
 		return matches[i].at > matches[j].at
@@ -162,7 +200,8 @@ func PreviewAdvancedCommand(data *processing.ProcessData, sessionId int64, comma
 	matches := findMatches(data.Static, sequence)
 
 	for _, match := range matches {
-		sequence = []byte(string(sequence[:match.at-match.len+1]) + "{" + GetGenderPlaceholderFromId(match.matchType, data.Trans) + " #" + strconv.Itoa(match.userIndex + 1) + "}" + string(sequence[match.at+1:]))
+		log.Printf("seq: at=%d len=%d", match.at, match.len)
+		sequence = []byte(string(sequence[:match.at]) + "{" + GetGenderPlaceholderFromId(match.matchType, data.Trans) + " #" + strconv.Itoa(match.userIndex + 1) + "}" + string(sequence[match.at+match.len:]))
 	}
 
 	data.SendMessage(string(sequence))
@@ -206,7 +245,7 @@ func SendAdvancedCommand(data *processing.ProcessData, sessionId int64, command 
 
 	// replace names in the string
 	for _, match := range matches {
-		sequence = []byte(string(sequence[:match.at-match.len+1]) + match.name + string(sequence[match.at+1:]))
+		sequence = []byte(string(sequence[:match.at]) + "<b>" + match.name + "</b>" + string(sequence[match.at+match.len:]))
 	}
 
 	// transmit the message to all players in the session
