@@ -94,8 +94,14 @@ func FormatTimestamp(timestamp time.Time, timezone string) string {
 }
 
 func SendSessionDialogToSomeone(userId int64, chatId int64, trans i18n.TranslateFunc, staticData *processing.StaticProccessStructs) {
-	messageId := staticData.Chat.SendDialog(chatId, staticData.MakeDialogFn("se", userId, trans, staticData, nil), 0)
-	GetDb(staticData).SetSessionMessageId(userId, messageId)
+	db := GetDb(staticData)
+	oldMessageId, isFound := db.GetSessionMessageId(userId)
+	if isFound {
+		staticData.Chat.RemoveMessage(chatId, oldMessageId)
+	}
+
+	newMssageId := staticData.Chat.SendDialog(chatId, staticData.MakeDialogFn("se", userId, trans, staticData, nil), 0)
+	GetDb(staticData).SetSessionMessageId(userId, newMssageId)
 }
 
 func SendSessionDialog(data *processing.ProcessData) {
@@ -123,10 +129,7 @@ func ResendSessionDialogs(sessionId int64, staticData *processing.StaticProccess
 	for _, userId := range users {
 		trans := FindTransFunction(userId, staticData)
 		chatId := db.GetChatId(userId)
-		messageId, isFound := db.GetSessionMessageId(userId)
-		if isFound {
-			staticData.Chat.RemoveMessage(chatId, messageId)
-		}
+
 		SendSessionDialogToSomeone(userId, chatId, trans, staticData)
 	}
 }
