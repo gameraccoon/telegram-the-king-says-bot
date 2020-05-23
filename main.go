@@ -110,6 +110,7 @@ func main() {
 	dialogManager.RegisterDialogFactory("gc", dialogFactories.MakeGenderSelectDialogFactory())
 	dialogManager.RegisterDialogFactory("se", dialogFactories.MakeSessionDialogFactory())
 	dialogManager.RegisterDialogFactory("ns", dialogFactories.MakeNoSessionDialogFactory())
+	dialogManager.RegisterDialogFactory("sc", dialogFactories.MakeSuggestedConfirmedDialogFactory())
 	dialogManager.RegisterTextInputProcessorManager(dialogFactories.GetTextInputProcessorManager())
 
 	staticData := &processing.StaticProccessStructs{

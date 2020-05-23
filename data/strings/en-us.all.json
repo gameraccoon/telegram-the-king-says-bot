@@ -27,6 +27,7 @@
 	"suggested_command_sent": { "other": "Command suggested" },
 	"no_suggested_commands": { "other": "No suggested commands in the list.\nSuggest one to send anonymously or just type and send it, I will send it to the others.\n/help - to know more about the syntax" },
 	"reveal_command": { "other": "Send one command" },
+	"suggest_another": { "other": "Suggest another" },
 
 	"gender_none": { "other": "None" },
 	"gender_female": { "other": "Girl" },

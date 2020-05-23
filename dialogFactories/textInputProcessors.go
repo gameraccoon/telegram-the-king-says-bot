@@ -42,6 +42,6 @@ func processSuggestCommand(additionalId int64, data *processing.ProcessData) boo
 	db := staticFunctions.GetDb(data.Static)
 	db.AddSessionSuggestedCommand(additionalId, data.Message)
 	staticFunctions.UpdateSessionDialogs(additionalId, data.Static)
-	data.SendMessage(data.Trans("suggested_command_sent"))
+	data.SendDialog(data.Static.MakeDialogFn("sc", data.UserId, data.Trans, data.Static, nil))
 	return true
 }
