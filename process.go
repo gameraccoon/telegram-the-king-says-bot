@@ -34,7 +34,7 @@ func sessionCommand(data *processing.ProcessData) {
 	if isInSession {
 		staticFunctions.SendSessionDialog(data)
 	} else {
-		data.SendDialog(data.Static.MakeDialogFn("ns", data.UserId, data.Trans, data.Static, nil))
+		staticFunctions.SendNoSessionDialog(data)
 	}
 	data.Static.SetUserStateTextProcessor(data.UserId, nil)
 }

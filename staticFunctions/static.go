@@ -101,11 +101,22 @@ func SendSessionDialogToSomeone(userId int64, chatId int64, trans i18n.Translate
 	}
 
 	newMssageId := staticData.Chat.SendDialog(chatId, staticData.MakeDialogFn("se", userId, trans, staticData, nil), 0)
-	GetDb(staticData).SetSessionMessageId(userId, newMssageId)
+	db.SetSessionMessageId(userId, newMssageId)
 }
 
 func SendSessionDialog(data *processing.ProcessData) {
 	SendSessionDialogToSomeone(data.UserId, data.ChatId, data.Trans, data.Static)
+}
+
+func SendNoSessionDialog(data *processing.ProcessData) {
+	db := GetDb(data.Static)
+	oldMessageId, isFound := db.GetSessionMessageId(data.UserId)
+	if isFound {
+		data.Static.Chat.RemoveMessage(data.ChatId, oldMessageId)
+	}
+
+	newMssageId := data.SendDialog(data.Static.MakeDialogFn("ns", data.UserId, data.Trans, data.Static, nil))
+	db.SetSessionMessageId(data.UserId, newMssageId)
 }
 
 func UpdateSessionDialogs(sessionId int64, staticData *processing.StaticProccessStructs) {
