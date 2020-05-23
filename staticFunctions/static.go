@@ -93,9 +93,13 @@ func FormatTimestamp(timestamp time.Time, timezone string) string {
 	}
 }
 
+func SendSessionDialogToSomeone(userId int64, chatId int64, trans i18n.TranslateFunc, staticData *processing.StaticProccessStructs) {
+	messageId := staticData.Chat.SendDialog(chatId, staticData.MakeDialogFn("se", userId, trans, staticData, nil), 0)
+	GetDb(staticData).SetSessionMessageId(userId, messageId)
+}
+
 func SendSessionDialog(data *processing.ProcessData) {
-	messageId := data.SendDialog(data.Static.MakeDialogFn("se", data.UserId, data.Trans, data.Static, nil))
-	GetDb(data.Static).SetSessionMessageId(data.UserId, messageId)
+	SendSessionDialogToSomeone(data.UserId, data.ChatId, data.Trans, data.Static)
 }
 
 func UpdateSessionDialogs(sessionId int64, staticData *processing.StaticProccessStructs) {
@@ -103,13 +107,27 @@ func UpdateSessionDialogs(sessionId int64, staticData *processing.StaticProccess
 	db := GetDb(staticData)
 
 	for _, userId := range users {
+		messageId, isFound := db.GetSessionMessageId(userId)
+		if isFound {
+			trans := FindTransFunction(userId, staticData)
+			chatId := db.GetChatId(userId)
+			staticData.Chat.SendDialog(chatId, staticData.MakeDialogFn("se", userId, trans, staticData, nil), messageId)
+		}
+	}
+}
+
+func ResendSessionDialogs(sessionId int64, staticData *processing.StaticProccessStructs) {
+	users := GetDb(staticData).GetUsersInSession(sessionId)
+	db := GetDb(staticData)
+
+	for _, userId := range users {
 		trans := FindTransFunction(userId, staticData)
-		dialog := staticData.MakeDialogFn("se", userId, trans, staticData, nil)
 		chatId := db.GetChatId(userId)
 		messageId, isFound := db.GetSessionMessageId(userId)
 		if isFound {
-			staticData.Chat.SendDialog(chatId, dialog, messageId)
+			staticData.Chat.RemoveMessage(chatId, messageId)
 		}
+		SendSessionDialogToSomeone(userId, chatId, trans, staticData)
 	}
 }
 

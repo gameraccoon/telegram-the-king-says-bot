@@ -225,6 +225,7 @@ func SendAdvancedCommand(data *processing.ProcessData, sessionId int64, command 
 	}
 
 	// transmit the message to all players in the session
+	ResendSessionDialogs(sessionId, data.Static)
 	for _, userId := range userIds {
 		chatId := db.GetChatId(userId)
 		data.Static.Chat.SendMessage(chatId, string(sequence), 0)

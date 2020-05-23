@@ -71,6 +71,14 @@ func disconnectSession(sessionId int64, data *processing.ProcessData) bool {
 }
 
 func suggestCommand(sessionId int64, data *processing.ProcessData) bool {
+	db := staticFunctions.GetDb(data.Static)
+	currentSessionId, isInSession := db.GetUserSession(data.UserId)
+
+	if !isInSession || sessionId != currentSessionId {
+		data.SendMessage(data.Trans("session_is_too_old"))
+		return true
+	}
+
 	data.SendMessage(data.Trans("suggest_command_msg"))
 	data.Static.SetUserStateTextProcessor(data.UserId, &processing.AwaitingTextProcessorData{
 		ProcessorId: "suggestCommand",
@@ -81,6 +89,12 @@ func suggestCommand(sessionId int64, data *processing.ProcessData) bool {
 
 func revealCommand(sessionId int64, data *processing.ProcessData) bool {
 	db := staticFunctions.GetDb(data.Static)
+	currentSessionId, isInSession := db.GetUserSession(data.UserId)
+
+	if !isInSession || sessionId != currentSessionId {
+		data.SendMessage(data.Trans("session_is_too_old"))
+		return true
+	}
 
 	command, isSucceeded := db.PopRandomSessionSuggestedCommand(sessionId)
 	staticFunctions.UpdateSessionDialogs(sessionId, data.Static)
