@@ -23,7 +23,7 @@
 	"invalid_name": { "other": "Enter a valid name" },
 	"name_too_long": { "other": "Name is too long, try to use a shorter one" },
 	"suggest_command": { "other": "Suggest command" },
-	"suggest_command_msg": { "other": "Type a command that will be suggested to others. Don't forget about placeholders:\n<code>🎲</code>,<code>❓</code>,<code>❔</code> - a random player\n<code>🚺</code>,<code>🍑</code>,<code>🍩</code>,<code>👒</code> - a random girl\n<code>🚹</code>,<code>🍆</code>,<code>🍌</code>,<code>🎩</code> - a random boy\n<code>💙</code>/<code>❤️</code> - two random players with opposite genders\n/help - for more info" },
+	"suggest_command_msg": { "other": "Type a command that will be suggested to others. Don't forget about placeholders:\n<code>🎲</code>,<code>❓</code>,<code>❔</code> - a random player\n<code>🚺</code>,<code>🍑</code>,<code>🍩</code>,<code>👒</code> - a random girl\n<code>🚹</code>,<code>🍆</code>,<code>🍌</code>,<code>🎩</code> - a random boy\n<code>💙</code>/<code>❤️</code> - two random players with opposite genders\nExample: <code>👒 kisses 🎲</code>\n/help - for more info" },
 	"suggested_command_sent": { "other": "Command suggested" },
 	"no_suggested_commands": { "other": "No suggested commands in the list.\nSuggest one to send anonymously or just type and send it, I will send it to the others.\n/help - to know more about the syntax" },
 	"reveal_command": { "other": "Send one command" },
