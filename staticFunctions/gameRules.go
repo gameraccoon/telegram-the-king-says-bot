@@ -1,7 +1,6 @@
 package staticFunctions
 
 import (
-	"bytes"
 	"github.com/gameraccoon/telegram-bot-skeleton/processing"
 	static "github.com/gameraccoon/telegram-the-king-says-bot/staticData"
 	"math/rand"
@@ -94,7 +93,7 @@ func appendMatches(matches *[]placeholderMatch, sequence []byte, placeholder *st
 	}
 }
 
-func appendOppositeMatches(matches *[]placeholderMatch, sequence []byte, placeholder *[2]string) {
+func appendOppositeMatches(matches *[]placeholderMatch, sequence []byte, placeholder *[2]static.PlaceholderInfo) {
 	var oppositeGendersIndexes [2]int
 	if rand.Intn(2) == 0 {
 		oppositeGendersIndexes = [2]int{2, 1}
@@ -103,23 +102,18 @@ func appendOppositeMatches(matches *[]placeholderMatch, sequence []byte, placeho
 	}
 
 	for placeholderIdx, gender := range oppositeGendersIndexes {
-		placeholderSeq := []byte(placeholder[placeholderIdx])
-		testSeq := sequence
-		seqShift := 0
-		for {
-			at := bytes.Index(testSeq, placeholderSeq)
-			if at == -1 {
-				break
+		resp := placeholder[placeholderIdx].Matcher.Match(sequence)
+		defer resp.Release()
+
+		for resp.HasNext() {
+			items := resp.NextMatchItem(sequence)
+			for _, itr := range items {
+				*matches = append(*matches, placeholderMatch{
+					at:itr.At-itr.KLen+1,
+					len:itr.KLen,
+					matchType:gender,
+				})
 			}
-
-			testSeq = testSeq[at+len(placeholderSeq):]
-
-			*matches = append(*matches, placeholderMatch{
-				at:at+seqShift,
-				len:len(placeholderSeq),
-				matchType:gender,
-			})
-			seqShift+=at+len(placeholderSeq)
 		}
 	}
 }
