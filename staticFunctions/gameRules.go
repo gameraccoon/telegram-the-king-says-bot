@@ -137,7 +137,7 @@ func getAndRemoveParticipatingUserName(users *[]database.SessionUserInfo, matchT
 			return user.Name
 		}
 	}
-	return "error"
+	return "[no match]"
 }
 
 func findMatches(staticData *processing.StaticProccessStructs, sequence []byte) []placeholderMatch {
