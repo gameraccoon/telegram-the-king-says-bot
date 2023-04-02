@@ -226,6 +226,17 @@ func SendAdvancedCommand(data *processing.ProcessData, sessionId int64, command 
 	db := GetDb(data.Static)
 	users := db.GetUsersInSessionInfo(sessionId)
 
+	{
+		commandLength := 0
+		for {
+			command = strings.ReplaceAll(strings.ReplaceAll(command, "<b>", ""), "</b>", "")
+			if len(command) == commandLength {
+				break
+			}
+			commandLength = len(command)
+		}
+	}
+
 	sequence := []byte(command)
 	matches := findMatches(data.Static, sequence)
 
@@ -250,22 +261,24 @@ func SendAdvancedCommand(data *processing.ProcessData, sessionId int64, command 
 		sequence = []byte(string(sequence[:match.at]) + "<b>" + match.name + "</b>" + string(sequence[match.at+match.len:]))
 	}
 
-	// increase idle counters for players who didn't participate and reset for the ones who participated
-	nonParticipatedIds := []int64{}
-	for _, user := range participatingUsers {
-		nonParticipatedIds = append(nonParticipatedIds, user.UserId)
-	}
-	participatedIds := []int64{}
-	for _, user := range users {
-		if !contains(nonParticipatedIds, user.UserId) {
-			participatedIds = append(participatedIds, user.UserId)
-		}
-	}
-		db.UpdateUsersIdleCount(nonParticipatedIds, 1, participatedIds)
-
 	// transmit the message to all players in the session
 	ResendSessionDialogs(sessionId, data.Static)
 	for _, user := range users {
 		data.Static.Chat.SendMessage(user.ChatId, string(sequence), 0)
+	}
+
+	// increase idle counters for players who didn't participate and reset for the ones who participated
+	{
+		nonParticipatedIds := []int64{}
+		for _, user := range participatingUsers {
+			nonParticipatedIds = append(nonParticipatedIds, user.UserId)
+		}
+		participatedIds := []int64{}
+		for _, user := range users {
+			if !contains(nonParticipatedIds, user.UserId) {
+				participatedIds = append(participatedIds, user.UserId)
+			}
+		}
+		db.UpdateUsersIdleCount(nonParticipatedIds, 1, participatedIds)
 	}
 }
