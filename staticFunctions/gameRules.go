@@ -6,8 +6,6 @@ import (
 	static "github.com/gameraccoon/telegram-the-king-says-bot/staticData"
 	"math/rand"
 	"sort"
-	"strconv"
-	"log"
 )
 
 func sendNumbers(data *processing.ProcessData, userIds []int64) {
@@ -77,15 +75,12 @@ type placeholderMatch struct {
 	at int
 	len int
 	matchType int
-	userIndex int
 	name string
 }
 
 func appendMatches(matches *[]placeholderMatch, sequence []byte, placeholder *static.PlaceholderInfo, matchType int) {
 	resp := placeholder.Matcher.Match(sequence)
 	defer resp.Release()
-
-	userIndex := 0
 
 	for resp.HasNext() {
 		items := resp.NextMatchItem(sequence)
@@ -94,9 +89,7 @@ func appendMatches(matches *[]placeholderMatch, sequence []byte, placeholder *st
 				at:itr.At-itr.KLen+1,
 				len:itr.KLen,
 				matchType:matchType,
-				userIndex:userIndex,
 			})
-			userIndex++
 		}
 	}
 }
@@ -110,7 +103,6 @@ func appendOppositeMatches(matches *[]placeholderMatch, sequence []byte, placeho
 	}
 
 	for placeholderIdx, gender := range oppositeGendersIndexes {
-		userIndex := 0
 		placeholderSeq := []byte(placeholder[placeholderIdx])
 		testSeq := sequence
 		seqShift := 0
@@ -126,9 +118,7 @@ func appendOppositeMatches(matches *[]placeholderMatch, sequence []byte, placeho
 				at:at+seqShift,
 				len:len(placeholderSeq),
 				matchType:gender,
-				userIndex:userIndex,
 			})
-			userIndex++
 			seqShift+=at+len(placeholderSeq)
 		}
 	}
@@ -174,18 +164,6 @@ func findMatches(staticData *processing.StaticProccessStructs, sequence []byte) 
 
 	removeIntersectedMatches(&matches)
 	return matches
-}
-
-func PreviewAdvancedCommand(data *processing.ProcessData, sessionId int64, command string) {
-	sequence := []byte(command)
-	matches := findMatches(data.Static, sequence)
-
-	for _, match := range matches {
-		log.Printf("seq: at=%d len=%d", match.at, match.len)
-		sequence = []byte(string(sequence[:match.at]) + "{" + GetGenderPlaceholderFromId(match.matchType, data.Trans) + " #" + strconv.Itoa(match.userIndex + 1) + "}" + string(sequence[match.at+match.len:]))
-	}
-
-	data.SendMessage(string(sequence))
 }
 
 func SendAdvancedCommand(data *processing.ProcessData, sessionId int64, command string) {
