@@ -13,6 +13,9 @@ require (
 
 require (
 	github.com/BurntSushi/toml v1.2.1 // indirect
+	github.com/anknown/ahocorasick v0.0.0-20170415101647-0c5fc0283558 // indirect
+	github.com/anknown/darts v0.0.0-20151216065714-83ff685239e6 // indirect
+	github.com/cloudflare/ahocorasick v0.0.0-20131126104932-1ce46e42b741 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/pelletier/go-toml v1.2.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
