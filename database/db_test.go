@@ -385,3 +385,37 @@ func TestFTUE(t *testing.T) {
 
 	assert.True(db.IsUserCompletedFTUE(userId1))
 }
+
+func TestIdleCount(t *testing.T) {
+	assert := require.New(t)
+	db := createDbAndConnect(t)
+	defer clearDb()
+	if db == nil {
+		t.Fail()
+		return
+	}
+	defer db.Disconnect()
+
+	userId1 := db.GetUserId(123, "", "a")
+	db.SetUserGender(userId1, 1)
+	userId2 := db.GetUserId(234, "", "b")
+	db.SetUserGender(userId2, 2)
+
+	sessionId, _, _ := db.CreateSession(userId1)
+	db.ConnectToSession(userId2, sessionId)
+
+	assert.Equal([]SessionUserInfo{SessionUserInfo{userId1, 123, "a", 1, 0}, SessionUserInfo{userId2, 234, "b", 2, 0}}, db.GetUsersInSessionInfo(sessionId))
+
+	db.UpdateUsersIdleCount([]int64{userId1, userId2}, 1, []int64{})
+
+	assert.Equal([]SessionUserInfo{SessionUserInfo{userId1, 123, "a", 1, 1}, SessionUserInfo{userId2, 234, "b", 2, 1}}, db.GetUsersInSessionInfo(sessionId))
+
+	db.UpdateUsersIdleCount([]int64{userId1}, 2, []int64{userId2})
+
+	assert.Equal([]SessionUserInfo{SessionUserInfo{userId1, 123, "a", 1, 3}, SessionUserInfo{userId2, 234, "b", 2, 0}}, db.GetUsersInSessionInfo(sessionId))
+
+	db.LeaveSession(userId1)
+	db.ConnectToSession(userId1, sessionId)
+
+	assert.Equal([]SessionUserInfo{SessionUserInfo{userId1, 123, "a", 1, 0}, SessionUserInfo{userId2, 234, "b", 2, 0}}, db.GetUsersInSessionInfo(sessionId))
+}

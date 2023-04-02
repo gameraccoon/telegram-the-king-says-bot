@@ -1,10 +1,13 @@
 package staticFunctions
 
 import (
+	"fmt"
 	"github.com/gameraccoon/telegram-bot-skeleton/processing"
+	"github.com/gameraccoon/telegram-the-king-says-bot/database"
 	static "github.com/gameraccoon/telegram-the-king-says-bot/staticData"
 	"math/rand"
 	"sort"
+	"strings"
 )
 
 func sendNumbers(data *processing.ProcessData, userIds []int64) {
@@ -127,17 +130,11 @@ func removeIntersectedMatches(matches *[]placeholderMatch) {
 	}
 }
 
-type participatingUser struct {
-	id int64
-	gender int
-	name string
-}
-
-func getAndRemoveParticipatingUserName(userIds *[]participatingUser, matchType int) string {
-	for i, user := range *userIds {
-		if matchType == 0 || (matchType & user.gender != 0) {
-			*userIds = append((*userIds)[:i], (*userIds)[i+1:]...)
-			return user.name
+func getAndRemoveParticipatingUserName(users *[]database.SessionUserInfo, matchType int) string {
+	for i, user := range *users {
+		if matchType == 0 || (matchType & user.Gender != 0) {
+			*users = append((*users)[:i], (*users)[i+1:]...)
+			return user.Name
 		}
 	}
 	return "error"
@@ -160,22 +157,79 @@ func findMatches(staticData *processing.StaticProccessStructs, sequence []byte) 
 	return matches
 }
 
+func getUserWeight(user *database.SessionUserInfo) int {
+	weightPower := user.CurrentSessionIdleCount
+	if weightPower > 31 {
+		weightPower = 31
+	}
+
+	weight := 1 << weightPower
+
+	if weight <= 0 {
+		panic("User weight can never be zero or lower")
+	}
+	return weight
+}
+
+func deleteUnordered(s *[]database.SessionUserInfo, i int) {
+	(*s)[i] = (*s)[len(*s)-1]
+	(*s) = (*s)[:len(*s)-1]
+}
+
+func weightedShuffle(users []database.SessionUserInfo) []database.SessionUserInfo {
+	if len(users) <= 1 {
+		return users
+	}
+
+	usersToDrawFrom := make([]database.SessionUserInfo, len(users))
+	copy(usersToDrawFrom, users)
+
+	result := []database.SessionUserInfo{}
+
+	sum := 0
+	for _, user := range usersToDrawFrom {
+		sum += getUserWeight(&user)
+	}
+
+	for len(usersToDrawFrom) > 1 {
+		weight := rand.Intn(sum)
+		for i, user := range usersToDrawFrom {
+			userWeight := getUserWeight(&user)
+			if weight < userWeight {
+				result = append(result, user)
+				deleteUnordered(&usersToDrawFrom, i)
+				sum -= userWeight
+				break
+			}
+			weight -= userWeight
+		}
+	}
+
+	if sum != getUserWeight(&usersToDrawFrom[0]) {
+		panic(fmt.Sprintf("The final list doesn't contain some of the records, missing weight %d", sum - getUserWeight(&usersToDrawFrom[0])))
+	}
+	result = append(result, usersToDrawFrom[0])
+
+	return result
+}
+
+func contains(slice []int64, val int64) bool {
+	for _, item := range slice {
+		if item == val {
+			return true
+		}
+	}
+	return false
+}
+
 func SendAdvancedCommand(data *processing.ProcessData, sessionId int64, command string) {
 	db := GetDb(data.Static)
-	userIds := db.GetUsersInSession(sessionId)
+	users := db.GetUsersInSessionInfo(sessionId)
 
 	sequence := []byte(command)
 	matches := findMatches(data.Static, sequence)
 
-	rand.Shuffle(len(userIds), func(i, j int) {
-		userIds[i], userIds[j] = userIds[j], userIds[i]
-	})
-
-	// fill the participating users
-	participatingUsers := make([]participatingUser, 0)
-	for _, userId := range userIds {
-		participatingUsers = append(participatingUsers, participatingUser{userId, db.GetUserGender(userId), db.GetUserName(userId)})
-	}
+	participatingUsers := weightedShuffle(users)
 
 	// fill the names for the matches with specified genders
 	for i, match := range matches {
@@ -187,7 +241,7 @@ func SendAdvancedCommand(data *processing.ProcessData, sessionId int64, command 
 	// fill the names for all the others
 	for i, match := range matches {
 		if len(match.name) == 0 {
-			matches[i].name = getAndRemoveParticipatingUserName(&participatingUsers, match.matchType)	
+			matches[i].name = getAndRemoveParticipatingUserName(&participatingUsers, match.matchType)
 		}
 	}
 
@@ -196,10 +250,22 @@ func SendAdvancedCommand(data *processing.ProcessData, sessionId int64, command 
 		sequence = []byte(string(sequence[:match.at]) + "<b>" + match.name + "</b>" + string(sequence[match.at+match.len:]))
 	}
 
+	// increase idle counters for players who didn't participate and reset for the ones who participated
+	nonParticipatedIds := []int64{}
+	for _, user := range participatingUsers {
+		nonParticipatedIds = append(nonParticipatedIds, user.UserId)
+	}
+	participatedIds := []int64{}
+	for _, user := range users {
+		if !contains(nonParticipatedIds, user.UserId) {
+			participatedIds = append(participatedIds, user.UserId)
+		}
+	}
+		db.UpdateUsersIdleCount(nonParticipatedIds, 1, participatedIds)
+
 	// transmit the message to all players in the session
 	ResendSessionDialogs(sessionId, data.Static)
-	for _, userId := range userIds {
-		chatId := db.GetChatId(userId)
-		data.Static.Chat.SendMessage(chatId, string(sequence), 0)
+	for _, user := range users {
+		data.Static.Chat.SendMessage(user.ChatId, string(sequence), 0)
 	}
 }

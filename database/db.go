@@ -5,6 +5,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	dbBase "github.com/gameraccoon/telegram-bot-skeleton/database"
 	"log"
+	"strings"
 	"sync"
 )
 
@@ -48,6 +49,7 @@ func ConnectDb(path string) (database *SpyBotDb, err error) {
 		// session related data
 		",current_session INTEGER" +
 		",current_session_message INTEGER" +
+		",current_session_idle_count INTEGER" + // how many steps player didn't participate in
 		")")
 
 	database.db.Exec("CREATE TABLE IF NOT EXISTS" +
@@ -494,7 +496,7 @@ func (database *SpyBotDb) LeaveSession(userId int64) (sessionId int64, wasInSess
 	database.mutex.Lock()
 	defer database.mutex.Unlock()
 
-	database.db.Exec(fmt.Sprintf("UPDATE OR ROLLBACK users SET current_session=NULL WHERE id=%d", userId))
+	database.db.Exec(fmt.Sprintf("UPDATE OR ROLLBACK users SET current_session=NULL, current_session_idle_count=0 WHERE id=%d", userId))
 
 	// delete session if it's empty
 	database.mutex.Unlock()
@@ -657,4 +659,45 @@ func (database *SpyBotDb) GetSessionSuggestedCommandCount(sessionId int64) (comm
 	}
 
 	return
+}
+
+type SessionUserInfo struct {
+	UserId int64
+	ChatId int64
+	Name string
+	Gender int
+	CurrentSessionIdleCount int
+}
+
+func (database *SpyBotDb) GetUsersInSessionInfo(sessionId int64) (users []SessionUserInfo) {
+	database.mutex.Lock()
+	defer database.mutex.Unlock()
+
+	rows, err := database.db.Query(fmt.Sprintf("SELECT id, chat_id, name, gender, IFNULL(current_session_idle_count, 0) AS current_session_idle_count FROM users WHERE current_session=%d", sessionId))
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var userInfo SessionUserInfo
+		err := rows.Scan(&userInfo.UserId, &userInfo.ChatId, &userInfo.Name, &userInfo.Gender, &userInfo.CurrentSessionIdleCount)
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+		users = append(users, userInfo)
+	}
+
+	return
+}
+
+func (database *SpyBotDb) UpdateUsersIdleCount(usersToIncrease []int64, countIncrease int, usersToReset []int64) {
+	database.mutex.Lock()
+	defer database.mutex.Unlock()
+
+	usersToIncreaseIds := strings.Trim(strings.Join(strings.Fields(fmt.Sprint(usersToIncrease)), ","), "[]")
+	usersToResetIds := strings.Trim(strings.Join(strings.Fields(fmt.Sprint(usersToReset)), ","), "[]")
+
+	database.db.Exec(fmt.Sprintf("UPDATE OR ROLLBACK users SET current_session_idle_count=IFNULL(current_session_idle_count, 0)+'%d' WHERE id IN (%s)", countIncrease, usersToIncreaseIds))
+	database.db.Exec(fmt.Sprintf("UPDATE OR ROLLBACK users SET current_session_idle_count='0' WHERE id IN (%s)", usersToResetIds))
 }
