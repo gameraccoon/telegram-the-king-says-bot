@@ -7,10 +7,10 @@ import (
 )
 
 func GetTextInputProcessorManager() dialogManager.TextInputProcessorManager {
-	return dialogManager.TextInputProcessorManager {
-		Processors : dialogManager.TextProcessorsMap {
-			"changeName" : processChangeName,
-			"suggestCommand" : processSuggestCommand,
+	return dialogManager.TextInputProcessorManager{
+		Processors: dialogManager.TextProcessorsMap{
+			"changeName":     processChangeName,
+			"suggestCommand": processSuggestCommand,
 		},
 	}
 }
@@ -29,7 +29,7 @@ func processChangeName(additionalId int64, data *processing.ProcessData) bool {
 			data.SendMessage(data.Trans("name_too_long"))
 		}
 	} else {
-			data.SendMessage(data.Trans("invalid_name"))
+		data.SendMessage(data.Trans("invalid_name"))
 	}
 
 	data.Static.SetUserStateTextProcessor(data.UserId, &processing.AwaitingTextProcessorData{

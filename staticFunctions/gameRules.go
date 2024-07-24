@@ -25,26 +25,26 @@ func sendNumbers(data *processing.ProcessData, userIds []int64) {
 
 		trans := FindTransFunction(userId, data.Static)
 
-		message := trans("player_number_msg", map[string]interface{} {
-			"Number": i+1,
+		message := trans("player_number_msg", map[string]interface{}{
+			"Number": i + 1,
 		})
 
-		if gender & 1 != 0 {
+		if gender&1 != 0 {
 			if len(message) > 0 {
 				message += "\n"
 			}
-			message += trans("female_number", map[string]interface{} {
-				"Number": femaleIdx+1,
+			message += trans("female_number", map[string]interface{}{
+				"Number": femaleIdx + 1,
 			})
 			femaleIdx++
 		}
 
-		if gender & 2 != 0 {
+		if gender&2 != 0 {
 			if len(message) > 0 {
 				message += "\n"
 			}
-			message += trans("male_number", map[string]interface{} {
-				"Number": maleIdx+1,
+			message += trans("male_number", map[string]interface{}{
+				"Number": maleIdx + 1,
 			})
 			maleIdx++
 		}
@@ -74,10 +74,10 @@ func getPlaceholders(staticData *processing.StaticProccessStructs) *static.Place
 }
 
 type placeholderMatch struct {
-	at int
-	len int
+	at        int
+	len       int
 	matchType int
-	name string
+	name      string
 }
 
 func appendMatches(matches *[]placeholderMatch, sequence []byte, placeholder *static.PlaceholderInfo, matchType int) {
@@ -88,9 +88,9 @@ func appendMatches(matches *[]placeholderMatch, sequence []byte, placeholder *st
 		items := resp.NextMatchItem(sequence)
 		for _, itr := range items {
 			*matches = append(*matches, placeholderMatch{
-				at:itr.At-itr.KLen+1,
-				len:itr.KLen,
-				matchType:matchType,
+				at:        itr.At - itr.KLen + 1,
+				len:       itr.KLen,
+				matchType: matchType,
 			})
 		}
 	}
@@ -112,9 +112,9 @@ func appendOppositeMatches(matches *[]placeholderMatch, sequence []byte, placeho
 			items := resp.NextMatchItem(sequence)
 			for _, itr := range items {
 				*matches = append(*matches, placeholderMatch{
-					at:itr.At-itr.KLen+1,
-					len:itr.KLen,
-					matchType:gender,
+					at:        itr.At - itr.KLen + 1,
+					len:       itr.KLen,
+					matchType: gender,
 				})
 			}
 		}
@@ -123,7 +123,7 @@ func appendOppositeMatches(matches *[]placeholderMatch, sequence []byte, placeho
 
 func removeIntersectedMatches(matches *[]placeholderMatch) {
 	for i := 1; i < len(*matches); i++ {
-		if (*matches)[i-1].at < (*matches)[i].at + (*matches)[i].len {
+		if (*matches)[i-1].at < (*matches)[i].at+(*matches)[i].len {
 			*matches = append((*matches)[:i], (*matches)[i+1:]...)
 			i--
 		}
@@ -132,7 +132,7 @@ func removeIntersectedMatches(matches *[]placeholderMatch) {
 
 func getAndRemoveParticipatingUserName(users *[]database.SessionUserInfo, matchType int) string {
 	for i, user := range *users {
-		if matchType == 0 || (matchType & user.Gender != 0) {
+		if matchType == 0 || (matchType&user.Gender != 0) {
 			*users = append((*users)[:i], (*users)[i+1:]...)
 			return user.Name
 		}
@@ -206,7 +206,7 @@ func weightedShuffle(users []database.SessionUserInfo) []database.SessionUserInf
 	}
 
 	if sum != getUserWeight(&usersToDrawFrom[0]) {
-		panic(fmt.Sprintf("The final list doesn't contain some of the records, missing weight %d", sum - getUserWeight(&usersToDrawFrom[0])))
+		panic(fmt.Sprintf("The final list doesn't contain some of the records, missing weight %d", sum-getUserWeight(&usersToDrawFrom[0])))
 	}
 	result = append(result, usersToDrawFrom[0])
 

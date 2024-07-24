@@ -4,15 +4,15 @@ import (
 	"github.com/gameraccoon/telegram-bot-skeleton/dialog"
 	"github.com/gameraccoon/telegram-bot-skeleton/dialogFactory"
 	"github.com/gameraccoon/telegram-bot-skeleton/processing"
-	"github.com/nicksnyder/go-i18n/i18n"
 	"github.com/gameraccoon/telegram-the-king-says-bot/staticFunctions"
+	"github.com/nicksnyder/go-i18n/i18n"
 )
 
 type noSessionVariantPrototype struct {
-	id string
-	textId string
-	process func(*processing.ProcessData) bool
-	rowId int
+	id         string
+	textId     string
+	process    func(*processing.ProcessData) bool
+	rowId      int
 	isActiveFn func() bool
 }
 
@@ -24,10 +24,10 @@ func MakeNoSessionDialogFactory() dialogFactory.DialogFactory {
 	return &(noSessionDialogFactory{
 		variants: []noSessionVariantPrototype{
 			noSessionVariantPrototype{
-				id: "createsess",
-				textId: "create_session",
+				id:      "createsess",
+				textId:  "create_session",
 				process: createNewSession,
-				rowId:2,
+				rowId:   2,
 			},
 		},
 	})
@@ -48,8 +48,8 @@ func (factory *noSessionDialogFactory) createVariants(trans i18n.TranslateFunc) 
 	for _, variant := range factory.variants {
 		if variant.isActiveFn == nil || variant.isActiveFn() {
 			variants = append(variants, dialog.Variant{
-				Id:   variant.id,
-				Text: trans(variant.textId),
+				Id:    variant.id,
+				Text:  trans(variant.textId),
 				RowId: variant.rowId,
 			})
 		}

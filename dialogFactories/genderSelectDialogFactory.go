@@ -4,16 +4,16 @@ import (
 	"github.com/gameraccoon/telegram-bot-skeleton/dialog"
 	"github.com/gameraccoon/telegram-bot-skeleton/dialogFactory"
 	"github.com/gameraccoon/telegram-bot-skeleton/processing"
-	"github.com/nicksnyder/go-i18n/i18n"
 	"github.com/gameraccoon/telegram-the-king-says-bot/staticFunctions"
+	"github.com/nicksnyder/go-i18n/i18n"
 	"strconv"
 )
 
 type genderSelectVariantPrototype struct {
-	id string
-	textId string
+	id      string
+	textId  string
 	process func(int64, *processing.ProcessData) bool
-	rowId int
+	rowId   int
 }
 
 type genderSelectDialogFactory struct {
@@ -24,28 +24,28 @@ func MakeGenderSelectDialogFactory() dialogFactory.DialogFactory {
 	return &(genderSelectDialogFactory{
 		variants: []genderSelectVariantPrototype{
 			genderSelectVariantPrototype{
-				id: "fe",
-				textId: "gender_female",
+				id:      "fe",
+				textId:  "gender_female",
 				process: selectGenderFemale,
-				rowId:1,
+				rowId:   1,
 			},
 			genderSelectVariantPrototype{
-				id: "ma",
-				textId: "gender_male",
+				id:      "ma",
+				textId:  "gender_male",
 				process: selectGenderMale,
-				rowId:1,
+				rowId:   1,
 			},
 			genderSelectVariantPrototype{
-				id: "bo",
-				textId: "gender_both",
+				id:      "bo",
+				textId:  "gender_both",
 				process: selectGenderBoth,
-				rowId:2,
+				rowId:   2,
 			},
 			genderSelectVariantPrototype{
-				id: "no",
-				textId: "gender_none",
+				id:      "no",
+				textId:  "gender_none",
 				process: selectGenderNone,
-				rowId:2,
+				rowId:   2,
 			},
 		},
 	})
@@ -84,8 +84,8 @@ func (factory *genderSelectDialogFactory) createVariants(trans i18n.TranslateFun
 
 	for _, variant := range factory.variants {
 		variants = append(variants, dialog.Variant{
-			Id:   variant.id,
-			Text: trans(variant.textId),
+			Id:    variant.id,
+			Text:  trans(variant.textId),
 			RowId: variant.rowId,
 		})
 	}

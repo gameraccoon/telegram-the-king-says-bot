@@ -5,17 +5,17 @@ import (
 	"github.com/gameraccoon/telegram-bot-skeleton/dialog"
 	"github.com/gameraccoon/telegram-bot-skeleton/dialogFactory"
 	"github.com/gameraccoon/telegram-bot-skeleton/processing"
-	"github.com/nicksnyder/go-i18n/i18n"
 	"github.com/gameraccoon/telegram-the-king-says-bot/staticFunctions"
+	"github.com/nicksnyder/go-i18n/i18n"
 	"log"
 	"strconv"
 )
 
 type sessionVariantPrototype struct {
-	id string
-	textId string
-	process func(int64, *processing.ProcessData) bool
-	rowId int
+	id         string
+	textId     string
+	process    func(int64, *processing.ProcessData) bool
+	rowId      int
 	isActiveFn func() bool
 }
 
@@ -27,27 +27,27 @@ func MakeSessionDialogFactory() dialogFactory.DialogFactory {
 	return &(sessionDialogFactory{
 		variants: []sessionVariantPrototype{
 			sessionVariantPrototype{
-				id: "share",
+				id:     "share",
 				textId: "share_link",
-				rowId:1,
+				rowId:  1,
 			},
 			sessionVariantPrototype{
-				id: "discsess",
-				textId: "disconnect_session",
+				id:      "discsess",
+				textId:  "disconnect_session",
 				process: disconnectSession,
-				rowId:1,
+				rowId:   1,
 			},
 			sessionVariantPrototype{
-				id: "sugg",
-				textId: "suggest_command",
+				id:      "sugg",
+				textId:  "suggest_command",
 				process: suggestCommand,
-				rowId:2,
+				rowId:   2,
 			},
 			sessionVariantPrototype{
-				id: "reve",
-				textId: "reveal_command",
+				id:      "reve",
+				textId:  "reveal_command",
 				process: revealCommand,
-				rowId:2,
+				rowId:   2,
 			},
 		},
 	})
@@ -81,7 +81,7 @@ func suggestCommand(sessionId int64, data *processing.ProcessData) bool {
 
 	data.SendMessage(data.Trans("suggest_command_msg"))
 	data.Static.SetUserStateTextProcessor(data.UserId, &processing.AwaitingTextProcessorData{
-		ProcessorId: "suggestCommand",
+		ProcessorId:  "suggestCommand",
 		AdditionalId: sessionId,
 	})
 	return true
@@ -119,10 +119,10 @@ func (factory *sessionDialogFactory) createVariants(trans i18n.TranslateFunc, se
 			}
 
 			variants = append(variants, dialog.Variant{
-				Id:   variant.id,
-				Text: trans(variant.textId),
-				Url: url,
-				RowId: variant.rowId,
+				Id:           variant.id,
+				Text:         trans(variant.textId),
+				Url:          url,
+				RowId:        variant.rowId,
 				AdditionalId: strconv.FormatInt(sessionId, 10),
 			})
 		}
@@ -134,9 +134,9 @@ func (factory *sessionDialogFactory) MakeDialog(userId int64, trans i18n.Transla
 	db := staticFunctions.GetDb(staticData)
 
 	sessionId, _ := db.GetUserSession(userId)
-	countInSession := db.GetUsersCountInSession(sessionId)
+	countInSession := db.GetTelegramUsersCountInSession(sessionId)
 
-	translationMap := map[string]interface{} {
+	translationMap := map[string]interface{}{
 		"Participants": countInSession,
 		"Commands":     db.GetSessionSuggestedCommandCount(sessionId),
 	}

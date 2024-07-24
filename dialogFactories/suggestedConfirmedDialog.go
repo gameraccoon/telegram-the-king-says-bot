@@ -4,16 +4,16 @@ import (
 	"github.com/gameraccoon/telegram-bot-skeleton/dialog"
 	"github.com/gameraccoon/telegram-bot-skeleton/dialogFactory"
 	"github.com/gameraccoon/telegram-bot-skeleton/processing"
-	"github.com/nicksnyder/go-i18n/i18n"
 	"github.com/gameraccoon/telegram-the-king-says-bot/staticFunctions"
+	"github.com/nicksnyder/go-i18n/i18n"
 	"strconv"
 )
 
 type suggestedConfirmedVariantPrototype struct {
-	id string
-	textId string
-	process func(int64, *processing.ProcessData) bool
-	rowId int
+	id         string
+	textId     string
+	process    func(int64, *processing.ProcessData) bool
+	rowId      int
 	isActiveFn func() bool
 }
 
@@ -25,10 +25,10 @@ func MakeSuggestedConfirmedDialogFactory() dialogFactory.DialogFactory {
 	return &(suggestedConfirmedDialogFactory{
 		variants: []suggestedConfirmedVariantPrototype{
 			suggestedConfirmedVariantPrototype{
-				id: "discsess",
-				textId: "suggest_another",
+				id:      "discsess",
+				textId:  "suggest_another",
 				process: suggestAnother,
-				rowId:1,
+				rowId:   1,
 			},
 		},
 	})
@@ -45,7 +45,7 @@ func suggestAnother(sessionId int64, data *processing.ProcessData) bool {
 
 	data.SendMessage(data.Trans("suggest_command_msg"))
 	data.Static.SetUserStateTextProcessor(data.UserId, &processing.AwaitingTextProcessorData{
-		ProcessorId: "suggestCommand",
+		ProcessorId:  "suggestCommand",
 		AdditionalId: sessionId,
 	})
 	return true
@@ -57,9 +57,9 @@ func (factory *suggestedConfirmedDialogFactory) createVariants(trans i18n.Transl
 	for _, variant := range factory.variants {
 		if variant.isActiveFn == nil || variant.isActiveFn() {
 			variants = append(variants, dialog.Variant{
-				Id:   variant.id,
-				Text: trans(variant.textId),
-				RowId: variant.rowId,
+				Id:           variant.id,
+				Text:         trans(variant.textId),
+				RowId:        variant.rowId,
 				AdditionalId: strconv.FormatInt(sessionId, 10),
 			})
 		}
