@@ -109,7 +109,7 @@ func processUpdate(userChans userChannelsData, data *processing.ProcessData, dia
 
 	userChanData.lastUpdateTime = time.Now()
 
-	// send parallel to not to wait
+	// send in parallel to not wait
 	go sendUpdate(userChanData.channel, data)
 }
 

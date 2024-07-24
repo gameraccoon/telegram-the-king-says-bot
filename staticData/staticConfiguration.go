@@ -5,27 +5,29 @@ import (
 )
 
 type LanguageData struct {
-	Key string
+	Key  string
 	Name string
 }
 
 type PlaceholderInfo struct {
-	Values []string
+	Values  []string
 	Matcher *cedar.Matcher
 }
 
 type PlaceholderInfos struct {
-	Male PlaceholderInfo
-	Female PlaceholderInfo
-	Common PlaceholderInfo
+	Male     PlaceholderInfo
+	Female   PlaceholderInfo
+	Common   PlaceholderInfo
 	Opposite [2]PlaceholderInfo
 }
 
 type StaticConfiguration struct {
 	AvailableLanguages []LanguageData
-	DefaultLanguage string
-	ExtendedLog bool
-	Placeholders PlaceholderInfos
+	DefaultLanguage    string
+	ExtendedLog        bool
+	Placeholders       PlaceholderInfos
+	RunHttpServer      bool
+	HttpServerPort     int
 }
 
 func compilePlaceholder(placeholder *PlaceholderInfo) {

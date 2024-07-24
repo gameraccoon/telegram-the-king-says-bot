@@ -134,7 +134,7 @@ func (factory *sessionDialogFactory) MakeDialog(userId int64, trans i18n.Transla
 	db := staticFunctions.GetDb(staticData)
 
 	sessionId, _ := db.GetUserSession(userId)
-	countInSession := db.GetTelegramUsersCountInSession(sessionId)
+	countInSession := db.GetUsersCountInSession(sessionId, false)
 
 	translationMap := map[string]interface{}{
 		"Participants": countInSession,

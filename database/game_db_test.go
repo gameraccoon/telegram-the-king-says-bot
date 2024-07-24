@@ -11,14 +11,14 @@ const (
 )
 
 func dropDatabase(fileName string) {
-	os.Remove(fileName)
+	_ = os.Remove(fileName)
 }
 
 func clearDb() {
 	dropDatabase(testDbPath)
 }
 
-func connectDb(t *testing.T) *SpyBotDb {
+func connectDb(t *testing.T) *GameDb {
 	assert := require.New(t)
 	db, err := ConnectDb(testDbPath)
 
@@ -29,7 +29,7 @@ func connectDb(t *testing.T) *SpyBotDb {
 	return db
 }
 
-func createDbAndConnect(t *testing.T) *SpyBotDb {
+func createDbAndConnect(t *testing.T) *GameDb {
 	clearDb()
 	return connectDb(t)
 }
@@ -125,15 +125,19 @@ func TestGetUserId(t *testing.T) {
 	var chatId1 int64 = 321
 	var chatId2 int64 = 123
 
-	id1 := db.GetUserId(chatId1, "", "")
-	id2 := db.GetUserId(chatId1, "", "")
-	id3 := db.GetUserId(chatId2, "", "")
+	id1 := db.GetOrCreateTelegramUserId(chatId1, "", "")
+	id2 := db.GetOrCreateTelegramUserId(chatId1, "", "")
+	id3 := db.GetOrCreateTelegramUserId(chatId2, "", "")
 
 	assert.Equal(id1, id2)
 	assert.NotEqual(id1, id3)
 
-	assert.Equal(chatId1, db.GetUserChatId(id1))
-	assert.Equal(chatId2, db.GetUserChatId(id3))
+	userChatId1, found := db.GetTelegramUserChatId(id1)
+	assert.True(found)
+	assert.Equal(chatId1, userChatId1)
+	userChatId3, found := db.GetTelegramUserChatId(id3)
+	assert.True(found)
+	assert.Equal(chatId2, userChatId3)
 }
 
 func TestUserName(t *testing.T) {
@@ -146,12 +150,12 @@ func TestUserName(t *testing.T) {
 	}
 	defer db.Disconnect()
 
-	testNameDefault1 := "default" 
+	testNameDefault1 := "default"
 	testName1 := "Te'stName"
 	testName2 := "Test'name2"
 
-	userId1 := db.GetUserId(321, "", testNameDefault1)
-	userId2 := db.GetUserId(123, "", testName2)
+	userId1 := db.GetOrCreateTelegramUserId(321, "", testNameDefault1)
+	userId2 := db.GetOrCreateTelegramUserId(123, "", testName2)
 
 	{
 		assert.Equal(testNameDefault1, db.GetUserName(userId1))
@@ -176,8 +180,8 @@ func TestUserLanguage(t *testing.T) {
 	}
 	defer db.Disconnect()
 
-	userId1 := db.GetUserId(123, "", "")
-	userId2 := db.GetUserId(321, "", "")
+	userId1 := db.GetOrCreateTelegramUserId(123, "", "")
+	userId2 := db.GetOrCreateTelegramUserId(321, "", "")
 
 	db.SetUserLanguage(userId1, "en-US")
 
@@ -188,7 +192,7 @@ func TestUserLanguage(t *testing.T) {
 		assert.Equal("", lang2)
 	}
 
-	// in case of some side-effects
+	// in case of some side effects
 	{
 		lang1 := db.GetUserLanguage(userId1)
 		lang2 := db.GetUserLanguage(userId2)
@@ -207,8 +211,8 @@ func TestUserGender(t *testing.T) {
 	}
 	defer db.Disconnect()
 
-	userId1 := db.GetUserId(123, "", "")
-	userId2 := db.GetUserId(321, "", "")
+	userId1 := db.GetOrCreateTelegramUserId(123, "", "")
+	userId2 := db.GetOrCreateTelegramUserId(321, "", "")
 
 	db.SetUserGender(userId1, 1)
 
@@ -235,8 +239,8 @@ func TestUserSession(t *testing.T) {
 	}
 	defer db.Disconnect()
 
-	userId1 := db.GetUserId(123, "", "")
-	userId2 := db.GetUserId(321, "", "")
+	userId1 := db.GetOrCreateTelegramUserId(123, "", "")
+	userId2 := db.GetOrCreateTelegramUserId(321, "", "")
 
 	sessionId, _, _ := db.CreateSession(userId1)
 	assert.True(db.DoesSessionExist(sessionId))
@@ -255,7 +259,8 @@ func TestUserSession(t *testing.T) {
 		assert.True(isInSession1)
 		assert.False(isInSession2)
 		assert.Equal(sessionId, sessionId1)
-		assert.Equal(int64(1), db.GetUsersCountInSession(sessionId1))
+		assert.Equal(int64(1), db.GetUsersCountInSession(sessionId1, true))
+		assert.Equal(int64(1), db.GetUsersCountInSession(sessionId1, false))
 
 		users := db.GetUsersInSession(sessionId)
 		assert.Equal(1, len(users))
@@ -263,7 +268,7 @@ func TestUserSession(t *testing.T) {
 			assert.Equal(userId1, users[0])
 		}
 	}
-	
+
 	db.ConnectToSession(userId2, sessionId)
 
 	{
@@ -273,7 +278,8 @@ func TestUserSession(t *testing.T) {
 		assert.True(isInSession2)
 		assert.Equal(sessionId, sessionId1)
 		assert.Equal(sessionId, sessionId2)
-		assert.Equal(int64(2), db.GetUsersCountInSession(sessionId))
+		assert.Equal(int64(2), db.GetUsersCountInSession(sessionId, true))
+		assert.Equal(int64(2), db.GetUsersCountInSession(sessionId, false))
 	}
 
 	db.LeaveSession(userId1)
@@ -285,7 +291,8 @@ func TestUserSession(t *testing.T) {
 		assert.False(isInSession1)
 		assert.True(isInSession2)
 		assert.Equal(sessionId, sessionId2)
-		assert.Equal(int64(1), db.GetUsersCountInSession(sessionId))
+		assert.Equal(int64(1), db.GetUsersCountInSession(sessionId, true))
+		assert.Equal(int64(1), db.GetUsersCountInSession(sessionId, false))
 	}
 
 	db.LeaveSession(userId2)
@@ -296,7 +303,8 @@ func TestUserSession(t *testing.T) {
 		_, isInSession2 := db.GetUserSession(userId2)
 		assert.False(isInSession1)
 		assert.False(isInSession2)
-		assert.Equal(int64(0), db.GetUsersCountInSession(sessionId))
+		assert.Equal(int64(0), db.GetUsersCountInSession(sessionId, true))
+		assert.Equal(int64(0), db.GetUsersCountInSession(sessionId, false))
 	}
 }
 
@@ -310,16 +318,15 @@ func TestSessionMessageId(t *testing.T) {
 	}
 	defer db.Disconnect()
 
-	userId1 := db.GetUserId(123, "", "")
+	userId1 := db.GetOrCreateTelegramUserId(123, "", "")
 	sessionMessageId := int64(32)
-
 
 	{
 		_, isFound := db.GetSessionMessageId(userId1)
 		assert.False(isFound)
 	}
 	db.SetSessionMessageId(userId1, sessionMessageId)
-	
+
 	{
 		sessionId, isFound := db.GetSessionMessageId(userId1)
 		assert.True(isFound)
@@ -337,7 +344,7 @@ func TestSuggestedCommands(t *testing.T) {
 	}
 	defer db.Disconnect()
 
-	userId1 := db.GetUserId(123, "", "")
+	userId1 := db.GetOrCreateTelegramUserId(123, "", "")
 
 	testCommand1 := "test'asd"
 	testCommand2 := "tefaasd'a"
@@ -345,7 +352,7 @@ func TestSuggestedCommands(t *testing.T) {
 	sessionId, _, _ := db.CreateSession(userId1)
 
 	assert.Equal(int64(0), db.GetSessionSuggestedCommandCount(sessionId))
-	
+
 	{
 		_, isSucceeded := db.PopRandomSessionSuggestedCommand(sessionId)
 		assert.False(isSucceeded)
@@ -377,7 +384,7 @@ func TestFTUE(t *testing.T) {
 	}
 	defer db.Disconnect()
 
-	userId1 := db.GetUserId(123, "", "")
+	userId1 := db.GetOrCreateTelegramUserId(123, "", "")
 
 	assert.False(db.IsUserCompletedFTUE(userId1))
 
@@ -396,26 +403,81 @@ func TestIdleCount(t *testing.T) {
 	}
 	defer db.Disconnect()
 
-	userId1 := db.GetUserId(123, "", "a")
+	userId1 := db.GetOrCreateTelegramUserId(123, "", "a")
 	db.SetUserGender(userId1, 1)
-	userId2 := db.GetUserId(234, "", "b")
+	userId2 := db.GetOrCreateTelegramUserId(234, "", "b")
 	db.SetUserGender(userId2, 2)
 
 	sessionId, _, _ := db.CreateSession(userId1)
 	db.ConnectToSession(userId2, sessionId)
 
-	assert.Equal([]SessionUserInfo{SessionUserInfo{userId1, 123, "a", 1, 0}, SessionUserInfo{userId2, 234, "b", 2, 0}}, db.GetUsersInSessionInfo(sessionId))
+	assert.Equal([]SessionUserInfo{{userId1, 123, "a", 1, 0, false}, {userId2, 234, "b", 2, 0, false}}, db.GetUsersInSessionInfo(sessionId))
 
 	db.UpdateUsersIdleCount([]int64{userId1, userId2}, 1, []int64{})
 
-	assert.Equal([]SessionUserInfo{SessionUserInfo{userId1, 123, "a", 1, 1}, SessionUserInfo{userId2, 234, "b", 2, 1}}, db.GetUsersInSessionInfo(sessionId))
+	assert.Equal([]SessionUserInfo{{userId1, 123, "a", 1, 1, false}, {userId2, 234, "b", 2, 1, false}}, db.GetUsersInSessionInfo(sessionId))
 
 	db.UpdateUsersIdleCount([]int64{userId1}, 2, []int64{userId2})
 
-	assert.Equal([]SessionUserInfo{SessionUserInfo{userId1, 123, "a", 1, 3}, SessionUserInfo{userId2, 234, "b", 2, 0}}, db.GetUsersInSessionInfo(sessionId))
+	assert.Equal([]SessionUserInfo{{userId1, 123, "a", 1, 3, false}, {userId2, 234, "b", 2, 0, false}}, db.GetUsersInSessionInfo(sessionId))
 
 	db.LeaveSession(userId1)
 	db.ConnectToSession(userId1, sessionId)
 
-	assert.Equal([]SessionUserInfo{SessionUserInfo{userId1, 123, "a", 1, 0}, SessionUserInfo{userId2, 234, "b", 2, 0}}, db.GetUsersInSessionInfo(sessionId))
+	assert.Equal([]SessionUserInfo{{userId1, 123, "a", 1, 0, false}, {userId2, 234, "b", 2, 0, false}}, db.GetUsersInSessionInfo(sessionId))
+}
+
+func TestAddWebUser(t *testing.T) {
+	assert := require.New(t)
+	db := createDbAndConnect(t)
+	defer clearDb()
+	if db == nil {
+		t.Fail()
+		return
+	}
+	defer db.Disconnect()
+
+	webUserToken := int64(10)
+
+	// we can add web users only if we have a session
+	userId := db.GetOrCreateTelegramUserId(123, "", "test")
+	sessionId, _, _ := db.CreateSession(userId)
+
+	assert.False(db.DoesWebUserExist(webUserToken))
+
+	wasAdded := db.AddWebUser(sessionId, webUserToken, "test name", 1)
+	assert.True(wasAdded)
+
+	assert.True(db.DoesWebUserExist(webUserToken))
+
+	wasAdded = db.AddWebUser(sessionId, webUserToken, "test name 2", 0)
+	assert.False(wasAdded) // same token
+
+	assert.Equal(int64(1), db.GetUsersCountInSession(sessionId, true))
+	assert.Equal(int64(2), db.GetUsersCountInSession(sessionId, false))
+
+	users := db.GetUsersInSession(sessionId)
+	assert.Equal(2, len(users))
+
+	for _, user := range users {
+		if user == userId {
+			continue
+		}
+		assert.Equal("test name", db.GetUserName(user))
+		assert.Equal(1, db.GetUserGender(user))
+		userSessionId, isInSession := db.GetUserSession(user)
+		assert.True(isInSession)
+		assert.Equal(sessionId, userSessionId)
+	}
+
+	webUserId, isFound := db.GetWebUserId(webUserToken)
+	assert.True(isFound)
+
+	assert.Equal([]SessionUserInfo{{userId, 123, "test", 0, 0, false}, {webUserId, 10, "test name", 1, 0, true}}, db.GetUsersInSessionInfo(sessionId))
+
+	// web users are not counted for the session survival
+	db.LeaveSession(userId)
+
+	assert.False(db.DoesSessionExist(sessionId))
+	assert.False(db.DoesWebUserExist(webUserToken))
 }

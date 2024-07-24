@@ -2,15 +2,15 @@ package database
 
 import (
 	"fmt"
-	_ "github.com/mattn/go-sqlite3"
 	dbBase "github.com/gameraccoon/telegram-bot-skeleton/database"
+	_ "github.com/mattn/go-sqlite3"
 	"log"
 	"strings"
 	"sync"
 )
 
-type SpyBotDb struct {
-	db dbBase.Database
+type GameDb struct {
+	db    dbBase.Database
 	mutex sync.Mutex
 }
 
@@ -18,8 +18,8 @@ func init() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 }
 
-func ConnectDb(path string) (database *SpyBotDb, err error) {
-	database = &SpyBotDb{}
+func ConnectDb(path string) (database *GameDb, err error) {
+	database = &GameDb{}
 
 	err = database.db.Connect(path)
 
@@ -40,16 +40,29 @@ func ConnectDb(path string) (database *SpyBotDb, err error) {
 
 	database.db.Exec("CREATE TABLE IF NOT EXISTS" +
 		" users(id INTEGER NOT NULL PRIMARY KEY" +
-		",chat_id INTEGER UNIQUE NOT NULL" +
 		",name TEXT NOT NULL" +
-		",language TEXT NOT NULL" +
 		",gender INTEGER NOT NULL" +
-		",ftue_completed INTEGER NOT NULL" +
 
 		// session related data
 		",current_session INTEGER" +
+		",current_session_idle_count INTEGER NOT NULL" + // how many steps player didn't participate in
+		")")
+
+	database.db.Exec("CREATE TABLE IF NOT EXISTS" +
+		" telegram_users(id INTEGER NOT NULL PRIMARY KEY" +
+		",user_id INTEGER UNIQUE NOT NULL" +
+		",chat_id INTEGER UNIQUE NOT NULL" +
+		",language TEXT NOT NULL" +
+		",ftue_completed INTEGER NOT NULL" +
+
+		// session related data
 		",current_session_message INTEGER" +
-		",current_session_idle_count INTEGER" + // how many steps player didn't participate in
+		")")
+
+	database.db.Exec("CREATE TABLE IF NOT EXISTS" +
+		" web_users(id INTEGER NOT NULL PRIMARY KEY" +
+		",user_id INTEGER UNIQUE NOT NULL" +
+		",token INTEGER UNIQUE NOT NULL" +
 		")")
 
 	database.db.Exec("CREATE TABLE IF NOT EXISTS" +
@@ -59,7 +72,10 @@ func ConnectDb(path string) (database *SpyBotDb, err error) {
 		")")
 
 	database.db.Exec("CREATE UNIQUE INDEX IF NOT EXISTS" +
-		" chat_id_index ON users(chat_id)")
+		" chat_id_index ON telegram_users(chat_id)")
+
+	database.db.Exec("CREATE UNIQUE INDEX IF NOT EXISTS" +
+		" user_id_index ON telegram_users(user_id)")
 
 	database.db.Exec("CREATE UNIQUE INDEX IF NOT EXISTS" +
 		" token_index ON sessions(token)")
@@ -67,24 +83,30 @@ func ConnectDb(path string) (database *SpyBotDb, err error) {
 	database.db.Exec("CREATE INDEX IF NOT EXISTS" +
 		" current_session_index ON users(current_session)")
 
+	database.db.Exec("CREATE UNIQUE INDEX IF NOT EXISTS" +
+		" token_index ON web_users(token)")
+
+	database.db.Exec("CREATE UNIQUE INDEX IF NOT EXISTS" +
+		" user_id_index ON web_users(user_id)")
+
 	return
 }
 
-func (database *SpyBotDb) IsConnectionOpened() bool {
+func (database *GameDb) IsConnectionOpened() bool {
 	database.mutex.Lock()
 	defer database.mutex.Unlock()
 
 	return database.db.IsConnectionOpened()
 }
 
-func (database *SpyBotDb) Disconnect() {
+func (database *GameDb) Disconnect() {
 	database.mutex.Lock()
 	defer database.mutex.Unlock()
 
 	database.db.Disconnect()
 }
 
-func (database *SpyBotDb) GetDatabaseVersion() (version string) {
+func (database *GameDb) GetDatabaseVersion() (version string) {
 	database.mutex.Lock()
 	defer database.mutex.Unlock()
 
@@ -93,7 +115,12 @@ func (database *SpyBotDb) GetDatabaseVersion() (version string) {
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-	defer rows.Close()
+	defer func() {
+		err := rows.Close()
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+	}()
 
 	if rows.Next() {
 		err := rows.Scan(&version)
@@ -108,7 +135,7 @@ func (database *SpyBotDb) GetDatabaseVersion() (version string) {
 	return
 }
 
-func (database *SpyBotDb) SetDatabaseVersion(version string) {
+func (database *GameDb) SetDatabaseVersion(version string) {
 	database.mutex.Lock()
 	defer database.mutex.Unlock()
 
@@ -118,96 +145,88 @@ func (database *SpyBotDb) SetDatabaseVersion(version string) {
 	database.db.Exec(fmt.Sprintf("INSERT INTO global_vars (name, string_value) VALUES ('version', '%s')", safeVersion))
 }
 
-func (database *SpyBotDb) GetUserId(chatId int64, userLangCode string, userName string) (userId int64) {
+func (database *GameDb) GetOrCreateTelegramUserId(chatId int64, userLangCode string, userName string) (userId int64) {
 	database.mutex.Lock()
 	defer database.mutex.Unlock()
 
-	database.db.Exec(fmt.Sprintf("INSERT OR IGNORE INTO users(chat_id, language, name, gender, ftue_completed) "+
-		"VALUES (%d, '%s', '%s', 0, 0)", chatId, userLangCode, dbBase.SanitizeString(userName)))
-
-	rows, err := database.db.Query(fmt.Sprintf("SELECT id FROM users WHERE chat_id=%d", chatId))
+	// first try to find an existing user
+	rows, err := database.db.Query(fmt.Sprintf("SELECT id FROM telegram_users WHERE chat_id=%d", chatId))
 	if err != nil {
 		log.Fatal(err.Error())
 		return
 	}
-	defer rows.Close()
+	defer func() {
+		err := rows.Close()
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+	}()
 
 	if rows.Next() {
+		// user is found, we don't need to do anything, return the id
 		err := rows.Scan(&userId)
 		if err != nil {
 			log.Fatal(err.Error())
 		}
-	} else {
-		err = rows.Err()
-		if err != nil {
-			log.Fatal(err)
-		}
-		log.Fatal("No user found")
+		return
 	}
+
+	err = rows.Close()
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
+	database.db.Exec(fmt.Sprintf("INSERT INTO users(name, gender, current_session_idle_count) "+
+		"VALUES ('%s', 0, 0)", dbBase.SanitizeString(userName)))
+
+	userId = database.getLastInsertedItemId()
+
+	database.db.Exec(fmt.Sprintf("INSERT INTO telegram_users(user_id, chat_id, language, ftue_completed) "+
+		"VALUES (%d, %d, '%s', 0)", userId, chatId, userLangCode))
 
 	return
 }
 
-func (database *SpyBotDb) GetChatId(userId int64) (chatId int64) {
+func (database *GameDb) GetTelegramUserChatId(userId int64) (chatId int64, isFound bool) {
 	database.mutex.Lock()
 	defer database.mutex.Unlock()
 
-	rows, err := database.db.Query(fmt.Sprintf("SELECT chat_id FROM users WHERE id=%d", userId))
+	rows, err := database.db.Query(fmt.Sprintf("SELECT chat_id FROM telegram_users WHERE user_id=%d", userId))
 	if err != nil {
 		log.Fatal(err.Error())
 		return
 	}
-	defer rows.Close()
+	defer func() {
+		err := rows.Close()
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+	}()
 
 	if rows.Next() {
 		err := rows.Scan(&chatId)
 		if err != nil {
 			log.Fatal(err.Error())
 		}
+		isFound = true
 	} else {
-		err = rows.Err()
-		if err != nil {
-			log.Fatal(err)
-		}
-		log.Fatal("No user found")
+		isFound = false
 	}
 
 	return
 }
 
-func (database *SpyBotDb) GetUserChatId(userId int64) (chatId int64) {
-	database.mutex.Lock()
-	defer database.mutex.Unlock()
-
-	rows, err := database.db.Query(fmt.Sprintf("SELECT chat_id FROM users WHERE id=%d", userId))
-	if err != nil {
-		log.Fatal(err.Error())
-		return
-	}
-	defer rows.Close()
-
-	if rows.Next() {
-		err := rows.Scan(&chatId)
-		if err != nil {
-			log.Fatal(err.Error())
-		}
-	} else {
-		err = rows.Err()
-		if err != nil {
-			log.Fatal(err)
-		}
-		log.Fatal("No user found")
-	}
-
-	return
-}
-
-func (database *SpyBotDb) getLastInsertedItemId() (id int64) {
+func (database *GameDb) getLastInsertedItemId() (id int64) {
 	rows, err := database.db.Query("SELECT last_insert_rowid()")
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-	defer rows.Close()
+	defer func() {
+		err := rows.Close()
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+	}()
 
 	if rows.Next() {
 		err := rows.Scan(&id)
@@ -225,14 +244,14 @@ func (database *SpyBotDb) getLastInsertedItemId() (id int64) {
 	return -1
 }
 
-func (database *SpyBotDb) SetUserName(userId int64, name string) {
+func (database *GameDb) SetUserName(userId int64, name string) {
 	database.mutex.Lock()
 	defer database.mutex.Unlock()
 
 	database.db.Exec(fmt.Sprintf("UPDATE OR ROLLBACK users SET name='%s' WHERE id=%d", dbBase.SanitizeString(name), userId))
 }
 
-func (database *SpyBotDb) GetUserName(userId int64) (name string) {
+func (database *GameDb) GetUserName(userId int64) (name string) {
 	database.mutex.Lock()
 	defer database.mutex.Unlock()
 
@@ -240,7 +259,12 @@ func (database *SpyBotDb) GetUserName(userId int64) (name string) {
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-	defer rows.Close()
+	defer func() {
+		err := rows.Close()
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+	}()
 
 	if rows.Next() {
 		err := rows.Scan(&name)
@@ -258,22 +282,27 @@ func (database *SpyBotDb) GetUserName(userId int64) (name string) {
 	return
 }
 
-func (database *SpyBotDb) SetUserLanguage(userId int64, language string) {
+func (database *GameDb) SetUserLanguage(userId int64, language string) {
 	database.mutex.Lock()
 	defer database.mutex.Unlock()
 
-	database.db.Exec(fmt.Sprintf("UPDATE OR ROLLBACK users SET language='%s' WHERE id=%d", language, userId))
+	database.db.Exec(fmt.Sprintf("UPDATE OR ROLLBACK telegram_users SET language='%s' WHERE user_id=%d", dbBase.SanitizeString(language), userId))
 }
 
-func (database *SpyBotDb) GetUserLanguage(userId int64) (language string) {
+func (database *GameDb) GetUserLanguage(userId int64) (language string) {
 	database.mutex.Lock()
 	defer database.mutex.Unlock()
 
-	rows, err := database.db.Query(fmt.Sprintf("SELECT language FROM users WHERE id=%d AND language IS NOT NULL", userId))
+	rows, err := database.db.Query(fmt.Sprintf("SELECT language FROM telegram_users WHERE user_id=%d AND language IS NOT NULL", userId))
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-	defer rows.Close()
+	defer func() {
+		err := rows.Close()
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+	}()
 
 	if rows.Next() {
 		err := rows.Scan(&language)
@@ -291,14 +320,14 @@ func (database *SpyBotDb) GetUserLanguage(userId int64) (language string) {
 	return
 }
 
-func (database *SpyBotDb) SetUserGender(userId int64, gender int) {
+func (database *GameDb) SetUserGender(userId int64, gender int) {
 	database.mutex.Lock()
 	defer database.mutex.Unlock()
 
 	database.db.Exec(fmt.Sprintf("UPDATE OR ROLLBACK users SET gender='%d' WHERE id=%d", gender, userId))
 }
 
-func (database *SpyBotDb) GetUserGender(userId int64) (gender int) {
+func (database *GameDb) GetUserGender(userId int64) (gender int) {
 	database.mutex.Lock()
 	defer database.mutex.Unlock()
 
@@ -306,7 +335,12 @@ func (database *SpyBotDb) GetUserGender(userId int64) (gender int) {
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-	defer rows.Close()
+	defer func() {
+		err := rows.Close()
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+	}()
 
 	if rows.Next() {
 		err := rows.Scan(&gender)
@@ -324,7 +358,7 @@ func (database *SpyBotDb) GetUserGender(userId int64) (gender int) {
 	return
 }
 
-func (database *SpyBotDb) SetUserCompletedFTUE(userId int64, isCompleted bool) {
+func (database *GameDb) SetUserCompletedFTUE(userId int64, isCompleted bool) {
 	database.mutex.Lock()
 	defer database.mutex.Unlock()
 
@@ -333,18 +367,23 @@ func (database *SpyBotDb) SetUserCompletedFTUE(userId int64, isCompleted bool) {
 		value = 1
 	}
 
-	database.db.Exec(fmt.Sprintf("UPDATE OR ROLLBACK users SET ftue_completed='%d' WHERE id=%d", value, userId))
+	database.db.Exec(fmt.Sprintf("UPDATE OR ROLLBACK telegram_users SET ftue_completed='%d' WHERE user_id=%d", value, userId))
 }
 
-func (database *SpyBotDb) IsUserCompletedFTUE(userId int64) (isCompleted bool) {
+func (database *GameDb) IsUserCompletedFTUE(userId int64) (isCompleted bool) {
 	database.mutex.Lock()
 	defer database.mutex.Unlock()
 
-	rows, err := database.db.Query(fmt.Sprintf("SELECT ftue_completed FROM users WHERE id=%d", userId))
+	rows, err := database.db.Query(fmt.Sprintf("SELECT ftue_completed FROM telegram_users WHERE user_id=%d", userId))
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-	defer rows.Close()
+	defer func() {
+		err := rows.Close()
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+	}()
 
 	if rows.Next() {
 		var value int
@@ -366,7 +405,7 @@ func (database *SpyBotDb) IsUserCompletedFTUE(userId int64) (isCompleted bool) {
 	return
 }
 
-func (database *SpyBotDb) GetUserSession(userId int64) (sessionId int64, isInSession bool) {
+func (database *GameDb) GetUserSession(userId int64) (sessionId int64, isInSession bool) {
 	database.mutex.Lock()
 	defer database.mutex.Unlock()
 
@@ -374,7 +413,12 @@ func (database *SpyBotDb) GetUserSession(userId int64) (sessionId int64, isInSes
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-	defer rows.Close()
+	defer func() {
+		err := rows.Close()
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+	}()
 
 	if rows.Next() {
 		err := rows.Scan(&sessionId)
@@ -393,7 +437,7 @@ func (database *SpyBotDb) GetUserSession(userId int64) (sessionId int64, isInSes
 	return
 }
 
-func (database *SpyBotDb) DoesSessionExist(sessionId int64) (isExists bool) {
+func (database *GameDb) DoesSessionExist(sessionId int64) (isExists bool) {
 	database.mutex.Lock()
 	defer database.mutex.Unlock()
 
@@ -401,14 +445,19 @@ func (database *SpyBotDb) DoesSessionExist(sessionId int64) (isExists bool) {
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-	defer rows.Close()
+	defer func() {
+		err := rows.Close()
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+	}()
 
-	isExists = rows.Next();
+	isExists = rows.Next()
 
 	return
 }
 
-func (database *SpyBotDb) CreateSession(userId int64) (sessionId int64, previousSessionId int64, wasInSession bool) {
+func (database *GameDb) CreateSession(userId int64) (sessionId int64, previousSessionId int64, wasInSession bool) {
 	previousSessionId, wasInSession = database.LeaveSession(userId)
 
 	database.mutex.Lock()
@@ -423,7 +472,7 @@ func (database *SpyBotDb) CreateSession(userId int64) (sessionId int64, previous
 	return
 }
 
-func (database *SpyBotDb) ConnectToSession(userId int64, sessionId int64) (isSucceeded bool, previousSessionId int64, wasInSession bool) {
+func (database *GameDb) ConnectToSession(userId int64, sessionId int64) (isSucceeded bool, previousSessionId int64, wasInSession bool) {
 	if !database.DoesSessionExist(sessionId) {
 		return
 	}
@@ -439,15 +488,27 @@ func (database *SpyBotDb) ConnectToSession(userId int64, sessionId int64) (isSuc
 	return
 }
 
-func (database *SpyBotDb) GetUsersCountInSession(sessionId int64) (usersCount int64) {
+func (database *GameDb) GetUsersCountInSession(sessionId int64, onlyTelegramUsers bool) (usersCount int64) {
 	database.mutex.Lock()
 	defer database.mutex.Unlock()
 
-	rows, err := database.db.Query(fmt.Sprintf("SELECT COUNT(*) FROM users WHERE current_session=%d", sessionId))
+	var request string
+	if onlyTelegramUsers {
+		request = fmt.Sprintf("SELECT COUNT(*) FROM users JOIN telegram_users ON users.id=telegram_users.user_id WHERE current_session=%d", sessionId)
+	} else {
+		request = fmt.Sprintf("SELECT COUNT(*) FROM users WHERE current_session=%d", sessionId)
+	}
+
+	rows, err := database.db.Query(request)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-	defer rows.Close()
+	defer func() {
+		err := rows.Close()
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+	}()
 
 	if rows.Next() {
 		err := rows.Scan(&usersCount)
@@ -464,7 +525,7 @@ func (database *SpyBotDb) GetUsersCountInSession(sessionId int64) (usersCount in
 	return
 }
 
-func (database *SpyBotDb) GetUsersInSession(sessionId int64) (users []int64) {
+func (database *GameDb) GetUsersInSession(sessionId int64) (users []int64) {
 	database.mutex.Lock()
 	defer database.mutex.Unlock()
 
@@ -472,7 +533,12 @@ func (database *SpyBotDb) GetUsersInSession(sessionId int64) (users []int64) {
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-	defer rows.Close()
+	defer func() {
+		err := rows.Close()
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+	}()
 
 	for rows.Next() {
 		var userId int64
@@ -486,7 +552,7 @@ func (database *SpyBotDb) GetUsersInSession(sessionId int64) (users []int64) {
 	return
 }
 
-func (database *SpyBotDb) LeaveSession(userId int64) (sessionId int64, wasInSession bool) {
+func (database *GameDb) LeaveSession(userId int64) (sessionId int64, wasInSession bool) {
 	sessionId, wasInSession = database.GetUserSession(userId)
 
 	if !wasInSession {
@@ -498,12 +564,15 @@ func (database *SpyBotDb) LeaveSession(userId int64) (sessionId int64, wasInSess
 
 	database.db.Exec(fmt.Sprintf("UPDATE OR ROLLBACK users SET current_session=NULL, current_session_idle_count=0 WHERE id=%d", userId))
 
-	// delete session if it's empty
+	// delete session if it doesn't have Telegram users in it
 	database.mutex.Unlock()
-	if database.GetUsersCountInSession(sessionId) == 0 {
+	if database.GetUsersCountInSession(sessionId, true) == 0 {
 		database.mutex.Lock()
 		database.db.Exec(fmt.Sprintf("DELETE FROM session_commands WHERE session_id=%d", sessionId))
 		database.db.Exec(fmt.Sprintf("DELETE FROM sessions WHERE id=%d", sessionId))
+		database.db.Exec(fmt.Sprintf("DELETE FROM web_users WHERE user_id IN (SELECT id FROM users WHERE current_session=%d)", sessionId))
+		// the remaining users that have this session is the web users that we just deleted
+		database.db.Exec(fmt.Sprintf("DELETE FROM users WHERE current_session=%d", sessionId))
 		database.mutex.Unlock()
 	}
 	database.mutex.Lock()
@@ -511,22 +580,27 @@ func (database *SpyBotDb) LeaveSession(userId int64) (sessionId int64, wasInSess
 	return
 }
 
-func (database *SpyBotDb) SetSessionMessageId(userId int64, messageId int64) {
+func (database *GameDb) SetSessionMessageId(userId int64, messageId int64) {
 	database.mutex.Lock()
 	defer database.mutex.Unlock()
 
-	database.db.Exec(fmt.Sprintf("UPDATE OR ROLLBACK users SET current_session_message=%d WHERE id=%d", messageId, userId))
+	database.db.Exec(fmt.Sprintf("UPDATE OR ROLLBACK telegram_users SET current_session_message=%d WHERE user_id=%d", messageId, userId))
 }
 
-func (database *SpyBotDb) GetSessionMessageId(userId int64) (messageId int64, isFound bool) {
+func (database *GameDb) GetSessionMessageId(userId int64) (messageId int64, isFound bool) {
 	database.mutex.Lock()
 	defer database.mutex.Unlock()
 
-	rows, err := database.db.Query(fmt.Sprintf("SELECT current_session_message FROM users WHERE id=%d AND current_session_message IS NOT NULL", userId))
+	rows, err := database.db.Query(fmt.Sprintf("SELECT current_session_message FROM telegram_users WHERE user_id=%d AND current_session_message IS NOT NULL", userId))
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-	defer rows.Close()
+	defer func() {
+		err := rows.Close()
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+	}()
 
 	if rows.Next() {
 		err := rows.Scan(&messageId)
@@ -544,7 +618,7 @@ func (database *SpyBotDb) GetSessionMessageId(userId int64) (messageId int64, is
 	return
 }
 
-func (database *SpyBotDb) GetSessionIdFromToken(token string) (sessionId int64, isFound bool) {
+func (database *GameDb) GetSessionIdFromToken(token string) (sessionId int64, isFound bool) {
 	database.mutex.Lock()
 	defer database.mutex.Unlock()
 
@@ -552,7 +626,12 @@ func (database *SpyBotDb) GetSessionIdFromToken(token string) (sessionId int64, 
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-	defer rows.Close()
+	defer func() {
+		err := rows.Close()
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+	}()
 
 	if rows.Next() {
 		err := rows.Scan(&sessionId)
@@ -571,7 +650,7 @@ func (database *SpyBotDb) GetSessionIdFromToken(token string) (sessionId int64, 
 	return
 }
 
-func (database *SpyBotDb) GetTokenFromSessionId(sessionId int64) (token string, isFound bool) {
+func (database *GameDb) GetTokenFromSessionId(sessionId int64) (token string, isFound bool) {
 	database.mutex.Lock()
 	defer database.mutex.Unlock()
 
@@ -579,7 +658,12 @@ func (database *SpyBotDb) GetTokenFromSessionId(sessionId int64) (token string, 
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-	defer rows.Close()
+	defer func() {
+		err := rows.Close()
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+	}()
 
 	if rows.Next() {
 		err := rows.Scan(&token)
@@ -598,14 +682,14 @@ func (database *SpyBotDb) GetTokenFromSessionId(sessionId int64) (token string, 
 	return
 }
 
-func (database *SpyBotDb) AddSessionSuggestedCommand(sessionId int64, command string) {
+func (database *GameDb) AddSessionSuggestedCommand(sessionId int64, command string) {
 	database.mutex.Lock()
 	defer database.mutex.Unlock()
 
 	database.db.Exec(fmt.Sprintf("INSERT INTO session_commands (session_id, command) VALUES (%d, '%s')", sessionId, dbBase.SanitizeString(command)))
 }
 
-func (database *SpyBotDb) PopRandomSessionSuggestedCommand(sessionId int64) (command string, isSucceeded bool) {
+func (database *GameDb) PopRandomSessionSuggestedCommand(sessionId int64) (command string, isSucceeded bool) {
 	database.mutex.Lock()
 	defer database.mutex.Unlock()
 
@@ -620,7 +704,10 @@ func (database *SpyBotDb) PopRandomSessionSuggestedCommand(sessionId int64) (com
 		if err != nil {
 			log.Fatal(err.Error())
 		}
-		rows.Close()
+		err = rows.Close()
+		if err != nil {
+			log.Fatal(err.Error())
+		}
 
 		database.db.Exec(fmt.Sprintf("DELETE FROM session_commands WHERE id=%d", rowId))
 
@@ -630,13 +717,16 @@ func (database *SpyBotDb) PopRandomSessionSuggestedCommand(sessionId int64) (com
 		if err != nil {
 			log.Fatal(err)
 		}
-		rows.Close()
+		err := rows.Close()
+		if err != nil {
+			log.Fatal(err.Error())
+		}
 	}
 
 	return
 }
 
-func (database *SpyBotDb) GetSessionSuggestedCommandCount(sessionId int64) (commandsCount int64) {
+func (database *GameDb) GetSessionSuggestedCommandCount(sessionId int64) (commandsCount int64) {
 	database.mutex.Lock()
 	defer database.mutex.Unlock()
 
@@ -644,7 +734,12 @@ func (database *SpyBotDb) GetSessionSuggestedCommandCount(sessionId int64) (comm
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-	defer rows.Close()
+	defer func() {
+		err := rows.Close()
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+	}()
 
 	if rows.Next() {
 		err := rows.Scan(&commandsCount)
@@ -662,42 +757,137 @@ func (database *SpyBotDb) GetSessionSuggestedCommandCount(sessionId int64) (comm
 }
 
 type SessionUserInfo struct {
-	UserId int64
-	ChatId int64
-	Name string
-	Gender int
+	UserId                  int64
+	ChatId                  int64 // token for web users
+	Name                    string
+	Gender                  int
 	CurrentSessionIdleCount int
+	IsWebUser               bool
 }
 
-func (database *SpyBotDb) GetUsersInSessionInfo(sessionId int64) (users []SessionUserInfo) {
+func (database *GameDb) GetUsersInSessionInfo(sessionId int64) (users []SessionUserInfo) {
 	database.mutex.Lock()
 	defer database.mutex.Unlock()
 
-	rows, err := database.db.Query(fmt.Sprintf("SELECT id, chat_id, name, gender, IFNULL(current_session_idle_count, 0) AS current_session_idle_count FROM users WHERE current_session=%d", sessionId))
+	// join users, telegram_users and web_users tables to get chat id as either chat id or token
+	request := fmt.Sprintf("SELECT users.id, IFNULL(telegram_users.chat_id, web_users.token) AS chat_id, users.name, users.gender, users.current_session_idle_count, IFNULL(web_users.token, 0) AS is_web_user FROM users LEFT JOIN telegram_users ON users.id=telegram_users.user_id LEFT JOIN web_users ON users.id=web_users.user_id WHERE users.current_session=%d", sessionId)
+
+	rows, err := database.db.Query(request)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var userInfo SessionUserInfo
-		err := rows.Scan(&userInfo.UserId, &userInfo.ChatId, &userInfo.Name, &userInfo.Gender, &userInfo.CurrentSessionIdleCount)
+	defer func() {
+		err := rows.Close()
 		if err != nil {
 			log.Fatal(err.Error())
 		}
+	}()
+
+	for rows.Next() {
+		var userInfo SessionUserInfo
+		var isWebUser int
+		err := rows.Scan(&userInfo.UserId, &userInfo.ChatId, &userInfo.Name, &userInfo.Gender, &userInfo.CurrentSessionIdleCount, &isWebUser)
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+		userInfo.IsWebUser = isWebUser != 0
 		users = append(users, userInfo)
 	}
 
 	return
 }
 
-func (database *SpyBotDb) UpdateUsersIdleCount(usersToIncrease []int64, countIncrease int, usersToReset []int64) {
+func (database *GameDb) UpdateUsersIdleCount(usersToIncrease []int64, countIncrease int, usersToReset []int64) {
 	database.mutex.Lock()
 	defer database.mutex.Unlock()
 
 	usersToIncreaseIds := strings.Trim(strings.Join(strings.Fields(fmt.Sprint(usersToIncrease)), ","), "[]")
 	usersToResetIds := strings.Trim(strings.Join(strings.Fields(fmt.Sprint(usersToReset)), ","), "[]")
 
-	database.db.Exec(fmt.Sprintf("UPDATE OR ROLLBACK users SET current_session_idle_count=IFNULL(current_session_idle_count, 0)+'%d' WHERE id IN (%s)", countIncrease, usersToIncreaseIds))
+	database.db.Exec(fmt.Sprintf("UPDATE OR ROLLBACK users SET current_session_idle_count=current_session_idle_count+'%d' WHERE id IN (%s)", countIncrease, usersToIncreaseIds))
 	database.db.Exec(fmt.Sprintf("UPDATE OR ROLLBACK users SET current_session_idle_count='0' WHERE id IN (%s)", usersToResetIds))
+}
+
+func (database *GameDb) AddWebUser(sessionId int64, token int64, name string, gender int) (wasAdded bool) {
+	database.mutex.Lock()
+	defer database.mutex.Unlock()
+
+	rows, err := database.db.Query(fmt.Sprintf("SELECT 1 FROM web_users WHERE token=%d", token))
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	defer func() {
+		err := rows.Close()
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+	}()
+
+	if rows.Next() {
+		return false
+	}
+
+	err = rows.Close()
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
+	database.db.Exec(fmt.Sprintf("INSERT INTO users (name, gender, current_session, current_session_idle_count) VALUES ('%s', %d, %d, 0)", dbBase.SanitizeString(name), sessionId, gender))
+
+	userId := database.getLastInsertedItemId()
+
+	database.db.Exec(fmt.Sprintf("INSERT INTO web_users (user_id, token) VALUES (%d, %d)", userId, token))
+
+	return true
+}
+
+func (database *GameDb) DoesWebUserExist(token int64) (isExists bool) {
+	database.mutex.Lock()
+	defer database.mutex.Unlock()
+
+	rows, err := database.db.Query(fmt.Sprintf("SELECT 1 FROM web_users WHERE token=%d", token))
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	defer func() {
+		err := rows.Close()
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+	}()
+
+	isExists = rows.Next()
+
+	return
+}
+
+func (database *GameDb) GetWebUserId(token int64) (userId int64, isFound bool) {
+	database.mutex.Lock()
+	defer database.mutex.Unlock()
+
+	rows, err := database.db.Query(fmt.Sprintf("SELECT user_id FROM web_users WHERE token=%d", token))
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	defer func() {
+		err := rows.Close()
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+	}()
+
+	if rows.Next() {
+		err := rows.Scan(&userId)
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+		isFound = true
+	} else {
+		err = rows.Err()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	return
 }

@@ -8,13 +8,12 @@ import (
 	"github.com/gameraccoon/telegram-bot-skeleton/telegramChat"
 	"github.com/gameraccoon/telegram-the-king-says-bot/database"
 	"github.com/gameraccoon/telegram-the-king-says-bot/dialogFactories"
+	"github.com/gameraccoon/telegram-the-king-says-bot/httpServer"
 	static "github.com/gameraccoon/telegram-the-king-says-bot/staticData"
 	"github.com/nicksnyder/go-i18n/i18n"
 	"io/ioutil"
 	"log"
-	"math/rand"
 	"strings"
-	"time"
 )
 
 func init() {
@@ -67,6 +66,7 @@ func main() {
 	translators := make(map[string]i18n.TranslateFunc)
 
 	for _, lang := range config.AvailableLanguages {
+		log.Println("Loading translation: " + lang.Key)
 		i18n.MustLoadTranslationFile("./data/strings/" + lang.Key + ".all.json")
 
 		trans, err1 := i18n.Tfunc(lang.Key)
@@ -124,5 +124,11 @@ func main() {
 
 	staticData.Init()
 
+	if config.RunHttpServer {
+		log.Println("Starting HTTP server")
+		go httpServer.HandleHttpRequests(config.HttpServerPort, db)
+	}
+
+	log.Println("Starting listening to Telegram updates")
 	startUpdating(chat, dialogManager, staticData)
 }

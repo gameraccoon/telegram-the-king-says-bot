@@ -10,13 +10,13 @@ import (
 	"time"
 )
 
-func GetDb(staticData *processing.StaticProccessStructs) *database.SpyBotDb {
+func GetDb(staticData *processing.StaticProccessStructs) *database.GameDb {
 	if staticData == nil {
 		log.Fatal("staticData is nil")
 		return nil
 	}
 
-	db, ok := staticData.Db.(*database.SpyBotDb)
+	db, ok := staticData.Db.(*database.GameDb)
 	if ok && db != nil {
 		return db
 	} else {
@@ -127,8 +127,10 @@ func UpdateSessionDialogs(sessionId int64, staticData *processing.StaticProccess
 		messageId, isFound := db.GetSessionMessageId(userId)
 		if isFound {
 			trans := FindTransFunction(userId, staticData)
-			chatId := db.GetChatId(userId)
-			staticData.Chat.SendDialog(chatId, staticData.MakeDialogFn("se", userId, trans, staticData, nil), messageId)
+			chatId, isFound := db.GetTelegramUserChatId(userId)
+			if isFound {
+				staticData.Chat.SendDialog(chatId, staticData.MakeDialogFn("se", userId, trans, staticData, nil), messageId)
+			}
 		}
 	}
 }
@@ -138,14 +140,16 @@ func ResendSessionDialogs(sessionId int64, staticData *processing.StaticProccess
 	db := GetDb(staticData)
 
 	for _, userId := range users {
-		trans := FindTransFunction(userId, staticData)
-		chatId := db.GetChatId(userId)
+		chatId, isFound := db.GetTelegramUserChatId(userId)
+		if isFound {
+			trans := FindTransFunction(userId, staticData)
 
-		SendSessionDialogToSomeone(userId, chatId, trans, staticData)
+			SendSessionDialogToSomeone(userId, chatId, trans, staticData)
+		}
 	}
 }
 
-func ConnectToSession(data *processing.ProcessData, token string) (successfull bool) {
+func ConnectToSession(data *processing.ProcessData, token string) (successful bool) {
 	db := GetDb(data.Static)
 	sessionId, isFound := db.GetSessionIdFromToken(token)
 	if !isFound {

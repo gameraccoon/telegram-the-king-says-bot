@@ -13,8 +13,8 @@ type ProcessorFuncMap map[string]ProcessorFunc
 
 func startCommand(data *processing.ProcessData) {
 	if len(data.Message) > 0 {
-		isSuccessfull := staticFunctions.ConnectToSession(data, data.Message)
-		if !isSuccessfull {
+		isSuccessful := staticFunctions.ConnectToSession(data, data.Message)
+		if !isSuccessful {
 			data.SendMessage(data.Trans("link_session_is_old"))
 		}
 	} else {
@@ -82,7 +82,7 @@ func processCommandByProcessors(data *processing.ProcessData, processors *Proces
 }
 
 func UpdateProcessData(data *processing.ProcessData) {
-	userId := staticFunctions.GetDb(data.Static).GetUserId(data.ChatId, data.UserSystemLang, data.UserSystemName)
+	userId := staticFunctions.GetDb(data.Static).GetOrCreateTelegramUserId(data.ChatId, data.UserSystemLang, data.UserSystemName)
 	data.UserId = userId
 	data.Trans = staticFunctions.FindTransFunction(userId, data.Static)
 }

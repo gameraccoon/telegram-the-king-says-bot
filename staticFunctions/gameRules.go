@@ -49,8 +49,10 @@ func sendNumbers(data *processing.ProcessData, userIds []int64) {
 			maleIdx++
 		}
 
-		chatId := db.GetChatId(userId)
-		data.Static.Chat.SendMessage(chatId, message, 0)
+		chatId, isFound := db.GetTelegramUserChatId(userId)
+		if isFound {
+			data.Static.Chat.SendMessage(chatId, message, 0)
+		}
 	}
 }
 
@@ -269,11 +271,11 @@ func SendAdvancedCommand(data *processing.ProcessData, sessionId int64, command 
 
 	// increase idle counters for players who didn't participate and reset for the ones who participated
 	{
-		nonParticipatedIds := []int64{}
+		var nonParticipatedIds []int64
 		for _, user := range participatingUsers {
 			nonParticipatedIds = append(nonParticipatedIds, user.UserId)
 		}
-		participatedIds := []int64{}
+		var participatedIds []int64
 		for _, user := range users {
 			if !contains(nonParticipatedIds, user.UserId) {
 				participatedIds = append(participatedIds, user.UserId)
