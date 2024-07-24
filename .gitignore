@@ -2,5 +2,7 @@
 *.swp
 *.db-journal
 /.idea/
+telegram-the-king-says-bot
 telegramApiToken.txt
 config.json
+
