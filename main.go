@@ -54,8 +54,6 @@ func loadConfig(path string) (config static.StaticConfiguration, err error) {
 }
 
 func main() {
-	rand.Seed(time.Now().UnixNano())
-
 	apiToken, err := getApiToken()
 	if err != nil {
 		log.Fatal(err.Error())
