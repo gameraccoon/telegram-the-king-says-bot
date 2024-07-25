@@ -107,7 +107,7 @@ func gamePage(w http.ResponseWriter, r *http.Request, db *database.GameDb) {
 	}
 
 	// get player token from URL
-	playerTokenStr := r.URL.Path[len("/game/"):]
+	playerTokenStr := r.URL.Path[len("/user/"):]
 	if playerTokenStr == "" {
 		http.Error(w, "Incorrect URL", http.StatusBadRequest)
 		return
@@ -121,7 +121,7 @@ func gamePage(w http.ResponseWriter, r *http.Request, db *database.GameDb) {
 
 	_, isFound := db.GetWebUserId(playerToken)
 	if isFound {
-		http.ServeFile(w, r, "data/html/game.html")
+		http.ServeFile(w, r, "data/html/user.html")
 	} else {
 		http.ServeFile(w, r, "data/html/invite_no_session.html")
 	}
@@ -356,7 +356,7 @@ func HandleHttpRequests(port int, staticData *processing.StaticProccessStructs) 
 	http.HandleFunc("/join", func(w http.ResponseWriter, r *http.Request) {
 		joinGame(w, r, db, staticData)
 	})
-	http.HandleFunc("/game/", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/user/", func(w http.ResponseWriter, r *http.Request) {
 		gamePage(w, r, db)
 	})
 	http.HandleFunc("/messages", func(w http.ResponseWriter, r *http.Request) {

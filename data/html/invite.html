@@ -57,8 +57,7 @@ $(document).ready(function() {
         }
 
         $.post('/join', { gameId: gameId, name: name, gender: gender }, function(data) {
-            // the server returns a unique token to join the game
-            window.location.href = '/game/' + data;
+            window.location.href = '/user/' + data;
         })
         .fail(function(error) {
             alert('Failed to join the game.\nError: ' + error.responseText);
