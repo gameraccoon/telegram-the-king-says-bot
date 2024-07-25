@@ -224,8 +224,8 @@ func contains(slice []int64, val int64) bool {
 	return false
 }
 
-func SendAdvancedCommand(data *processing.ProcessData, sessionId int64, command string) {
-	db := GetDb(data.Static)
+func SendAdvancedCommand(staticData *processing.StaticProccessStructs, sessionId int64, command string) {
+	db := GetDb(staticData)
 	users := db.GetUsersInSessionInfo(sessionId)
 
 	{
@@ -240,7 +240,7 @@ func SendAdvancedCommand(data *processing.ProcessData, sessionId int64, command 
 	}
 
 	sequence := []byte(command)
-	matches := findMatches(data.Static, sequence)
+	matches := findMatches(staticData, sequence)
 
 	participatingUsers := weightedShuffle(users)
 
@@ -266,10 +266,10 @@ func SendAdvancedCommand(data *processing.ProcessData, sessionId int64, command 
 	message := string(sequence)
 
 	// transmit the message to all players in the session
-	ResendSessionDialogs(sessionId, data.Static)
+	ResendSessionDialogs(sessionId, staticData)
 	for _, user := range users {
 		if !user.IsWebUser {
-			data.Static.Chat.SendMessage(user.ChatId, message, 0)
+			staticData.Chat.SendMessage(user.ChatId, message, 0)
 		}
 	}
 

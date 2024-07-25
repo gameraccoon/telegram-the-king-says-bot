@@ -100,7 +100,7 @@ func revealCommand(sessionId int64, data *processing.ProcessData) bool {
 	staticFunctions.UpdateSessionDialogs(sessionId, data.Static)
 
 	if isSucceeded {
-		staticFunctions.SendAdvancedCommand(data, sessionId, command)
+		staticFunctions.SendAdvancedCommand(data.Static, sessionId, command)
 	} else {
 		data.SendMessage(data.Trans("no_suggested_commands"))
 	}

@@ -1,7 +1,9 @@
 package httpServer
 
 import (
+	"github.com/gameraccoon/telegram-bot-skeleton/processing"
 	"github.com/gameraccoon/telegram-the-king-says-bot/database"
+	"github.com/gameraccoon/telegram-the-king-says-bot/staticFunctions"
 	"log"
 	"math/rand/v2"
 	"net/http"
@@ -95,7 +97,7 @@ func joinGame(w http.ResponseWriter, r *http.Request, db *database.GameDb) {
 	}
 }
 
-func gamePage(w http.ResponseWriter, r *http.Request, db *database.GameDb) {
+func gamePage(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, "data/html/game.html")
 }
 
@@ -211,7 +213,7 @@ func suggestCommand(w http.ResponseWriter, r *http.Request, db *database.GameDb)
 	}
 }
 
-func revealSuggestedCommand(w http.ResponseWriter, r *http.Request, db *database.GameDb) {
+func revealSuggestedCommand(w http.ResponseWriter, r *http.Request, db *database.GameDb, staticData *processing.StaticProccessStructs) {
 	if r.Method != "POST" {
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
 		return
@@ -241,13 +243,23 @@ func revealSuggestedCommand(w http.ResponseWriter, r *http.Request, db *database
 		return
 	}
 
-	_ /*sessionId*/, isInSession := db.GetUserSession(userId)
+	sessionId, isInSession := db.GetUserSession(userId)
 	if !isInSession {
 		http.Error(w, "Player not in session, has the game ended?", http.StatusNotFound)
 		return
 	}
 
-	// HERE WE NEED TO TALK TO TELEGRAM BOT TO GET THE COMMAND
+	command, isSucceeded := db.PopRandomSessionSuggestedCommand(sessionId)
+	staticFunctions.UpdateSessionDialogs(sessionId, staticData)
+
+	if isSucceeded {
+		staticFunctions.SendAdvancedCommand(staticData, sessionId, command)
+	} else {
+		_, err = w.Write([]byte("List of commands is empty"))
+		if err != nil {
+			return
+		}
+	}
 
 	_, err = w.Write([]byte("ok"))
 }
@@ -284,7 +296,9 @@ func leaveGame(w http.ResponseWriter, r *http.Request, db *database.GameDb) {
 	}
 }
 
-func HandleHttpRequests(port int, db *database.GameDb) {
+func HandleHttpRequests(port int, staticData *processing.StaticProccessStructs) {
+	db := staticFunctions.GetDb(staticData)
+
 	http.HandleFunc("/", homePage)
 	http.HandleFunc("/invite/", func(w http.ResponseWriter, r *http.Request) {
 		invitePage(w, r, db)
@@ -293,7 +307,7 @@ func HandleHttpRequests(port int, db *database.GameDb) {
 		joinGame(w, r, db)
 	})
 	http.HandleFunc("/game/", func(w http.ResponseWriter, r *http.Request) {
-		gamePage(w, r, db)
+		gamePage(w, r)
 	})
 	http.HandleFunc("/messages", func(w http.ResponseWriter, r *http.Request) {
 		getLastMessages(w, r, db)
@@ -302,7 +316,7 @@ func HandleHttpRequests(port int, db *database.GameDb) {
 		suggestCommand(w, r, db)
 	})
 	http.HandleFunc("/reveal", func(w http.ResponseWriter, r *http.Request) {
-		revealSuggestedCommand(w, r, db)
+		revealSuggestedCommand(w, r, db, staticData)
 	})
 	http.HandleFunc("/leave", func(w http.ResponseWriter, r *http.Request) {
 		leaveGame(w, r, db)

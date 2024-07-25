@@ -126,7 +126,7 @@ func main() {
 
 	if config.RunHttpServer {
 		log.Println("Starting HTTP server")
-		go httpServer.HandleHttpRequests(config.HttpServerPort, db)
+		go httpServer.HandleHttpRequests(config.HttpServerPort, staticData)
 	}
 
 	log.Println("Starting listening to Telegram updates")
