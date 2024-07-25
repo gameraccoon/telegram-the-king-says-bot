@@ -4,8 +4,56 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <title>The King Says</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        text-align: center;
+        margin: 20px;
+    }
+</style>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script>
+$(document).ready(function() {
+    var playerToken = window.location.pathname.split('/').pop();
+    var lastMessageIdx = -1;
+
+    // every 5 seconds, check if we got new messages
+    setInterval(function() {
+        $.ajax({
+            url: '/messages',
+            type: 'GET',
+            data: { playerToken: playerToken, lastMessageIdx: lastMessageIdx },
+            contentType: 'application/json',
+            success: function(response) {
+                // get number of messages
+                var numMessages = response.messages.length;
+
+                // if there's a gap in the messages, add a line about that
+                if (response.lastMessageIdx - lastMessageIdx > numMessages) {
+                    $('#messages').append('<p style="color: gray;">' + (response.lastMessageIdx - lastMessageIdx - numMessages) + ' old commands were not received</p>');
+                }
+
+                // append new messages to the body
+                var newMessagesCount = response.lastMessageIdx - lastMessageIdx
+                var newMessages = response.messages.slice(-newMessagesCount);
+                newMessages.forEach(function(message) {
+                    $('#messages').append('<p>' + message + '</p>');
+                });
+
+                lastMessageIdx = response.lastMessageIdx;
+                console.log('lastMessageIdx:', lastMessageIdx);
+
+                if (newMessagesCount > 0) {
+                    $('#messages').scrollTop($('#messages')[0].scrollHeight);
+                }
+            }
+        });
+    }, 5000);
+});
+</script>
 </head>
 <body>
-
+<p>Last King's commands:</p>
+<div id="messages" style="height: 200px; border: 1px solid black; overflow-y: scroll;"></div>
 </body>
 </html>

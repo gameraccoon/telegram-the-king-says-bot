@@ -263,11 +263,18 @@ func SendAdvancedCommand(data *processing.ProcessData, sessionId int64, command 
 		sequence = []byte(string(sequence[:match.at]) + "<b>" + match.name + "</b>" + string(sequence[match.at+match.len:]))
 	}
 
+	message := string(sequence)
+
 	// transmit the message to all players in the session
 	ResendSessionDialogs(sessionId, data.Static)
 	for _, user := range users {
-		data.Static.Chat.SendMessage(user.ChatId, string(sequence), 0)
+		if !user.IsWebUser {
+			data.Static.Chat.SendMessage(user.ChatId, message, 0)
+		}
 	}
+
+	// save the message to th db so that web users can see it
+	db.AddRecentlySentCommand(sessionId, message, 10)
 
 	// increase idle counters for players who didn't participate and reset for the ones who participated
 	{

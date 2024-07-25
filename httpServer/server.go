@@ -99,6 +99,68 @@ func gamePage(w http.ResponseWriter, r *http.Request, db *database.GameDb) {
 	http.ServeFile(w, r, "data/html/game.html")
 }
 
+func getLastMessages(w http.ResponseWriter, r *http.Request, db *database.GameDb) {
+	if r.Method != "GET" {
+		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+		return
+	}
+
+	err := r.ParseForm()
+
+	if err != nil {
+		http.Error(w, "Can't parse form", http.StatusBadRequest)
+		return
+	}
+
+	playerTokenStr := r.Form.Get("playerToken")
+	if playerTokenStr == "" {
+		http.Error(w, "Incorrect player token", http.StatusBadRequest)
+		return
+	}
+
+	playerToken, err := strconv.ParseInt(playerTokenStr, 10, 64)
+	if err != nil {
+		http.Error(w, "Incorrect player token", http.StatusBadRequest)
+		return
+	}
+
+	userId, isFound := db.GetWebUserId(playerToken)
+	if !isFound {
+		http.Error(w, "Player not found, was the game ended?", http.StatusNotFound)
+		return
+	}
+
+	lastMessageIdxStr := r.Form.Get("lastMessageIdx")
+	if lastMessageIdxStr == "" {
+		http.Error(w, "Incorrect last message index", http.StatusBadRequest)
+		return
+	}
+
+	lastMessageIdx, err := strconv.Atoi(lastMessageIdxStr)
+	if err != nil {
+		http.Error(w, "Incorrect last message index", http.StatusBadRequest)
+		return
+	}
+
+	sessionId, isInSession := db.GetUserSession(userId)
+	if !isInSession {
+		http.Error(w, "Player not in session, was the game ended?", http.StatusNotFound)
+		return
+	}
+
+	messages, newLastIdx := db.GetNewRecentlySentCommands(sessionId, lastMessageIdx)
+
+	w.Header().Set("Content-Type", "application/json")
+	messagesStr := ""
+	for i, message := range messages {
+		if i > 0 {
+			messagesStr += "\",\""
+		}
+		messagesStr += message
+	}
+	_, err = w.Write([]byte("{\"lastMessageIdx\":" + strconv.Itoa(newLastIdx) + ",\"messages\":[\"" + messagesStr + "\"]}"))
+}
+
 func HandleHttpRequests(port int, db *database.GameDb) {
 	http.HandleFunc("/", homePage)
 	http.HandleFunc("/invite/", func(w http.ResponseWriter, r *http.Request) {
@@ -109,6 +171,9 @@ func HandleHttpRequests(port int, db *database.GameDb) {
 	})
 	http.HandleFunc("/game/", func(w http.ResponseWriter, r *http.Request) {
 		gamePage(w, r, db)
+	})
+	http.HandleFunc("/messages", func(w http.ResponseWriter, r *http.Request) {
+		getLastMessages(w, r, db)
 	})
 
 	addr := ":" + strconv.Itoa(port)
