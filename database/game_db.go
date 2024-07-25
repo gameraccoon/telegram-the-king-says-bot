@@ -855,6 +855,42 @@ func (database *GameDb) AddWebUser(sessionId int64, token int64, name string, ge
 	return true
 }
 
+func (database *GameDb) RemoveWebUser(token int64) {
+	database.mutex.Lock()
+	defer database.mutex.Unlock()
+
+	rows, err := database.db.Query(fmt.Sprintf("SELECT user_id FROM web_users WHERE token=%d", token))
+	if err != nil {
+		log.Fatal(err.Error())
+		return
+	}
+	defer func() {
+		err := rows.Close()
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+	}()
+
+	var userId int64
+	if rows.Next() {
+		err := rows.Scan(&userId)
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+	} else {
+		return
+	}
+
+	err = rows.Close()
+	if err != nil {
+		log.Fatal(err.Error())
+		return
+	}
+
+	database.db.Exec(fmt.Sprintf("DELETE FROM web_users WHERE token=%d", token))
+	database.db.Exec(fmt.Sprintf("DELETE FROM users WHERE id=%d", userId))
+}
+
 func (database *GameDb) DoesWebUserExist(token int64) (isExists bool) {
 	database.mutex.Lock()
 	defer database.mutex.Unlock()

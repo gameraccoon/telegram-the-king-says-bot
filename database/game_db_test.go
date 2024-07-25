@@ -482,6 +482,32 @@ func TestAddWebUser(t *testing.T) {
 	assert.False(db.DoesWebUserExist(webUserToken))
 }
 
+func TestRemoveWebUser(t *testing.T) {
+	assert := require.New(t)
+	db := createDbAndConnect(t)
+	defer clearDb()
+	if db == nil {
+		t.Fail()
+		return
+	}
+	defer db.Disconnect()
+
+	webUserToken := int64(10)
+
+	userId := db.GetOrCreateTelegramUserId(123, "", "test")
+	sessionId, _, _ := db.CreateSession(userId)
+
+	db.AddWebUser(sessionId, webUserToken, "test name", 2)
+
+	assert.True(db.DoesWebUserExist(webUserToken))
+
+	db.RemoveWebUser(webUserToken)
+
+	assert.False(db.DoesWebUserExist(webUserToken))
+
+	assert.Equal(int64(1), db.GetUsersCountInSession(sessionId, false))
+}
+
 func TestRecentlySentCommands(t *testing.T) {
 	assert := require.New(t)
 	db := createDbAndConnect(t)
