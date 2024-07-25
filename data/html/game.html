@@ -17,23 +17,19 @@ $(document).ready(function() {
     var playerToken = window.location.pathname.split('/').pop();
     var lastMessageIdx = -1;
 
-    // every 5 seconds, check if we got new messages
     setInterval(function() {
         $.ajax({
             url: '/messages',
             type: 'GET',
-            data: { playerToken: playerToken, lastMessageIdx: lastMessageIdx },
+            data: { 'playerToken': playerToken, 'lastMessageIdx': lastMessageIdx },
             contentType: 'application/json',
             success: function(response) {
-                // get number of messages
                 var numMessages = response.messages.length;
 
-                // if there's a gap in the messages, add a line about that
                 if (response.lastMessageIdx - lastMessageIdx > numMessages) {
                     $('#messages').append('<p style="color: gray;">' + (response.lastMessageIdx - lastMessageIdx - numMessages) + ' old commands were not received</p>');
                 }
 
-                // append new messages to the body
                 var newMessagesCount = response.lastMessageIdx - lastMessageIdx
                 var newMessages = response.messages.slice(-newMessagesCount);
                 newMessages.forEach(function(message) {
@@ -41,7 +37,6 @@ $(document).ready(function() {
                 });
 
                 lastMessageIdx = response.lastMessageIdx;
-                console.log('lastMessageIdx:', lastMessageIdx);
 
                 if (newMessagesCount > 0) {
                     $('#messages').scrollTop($('#messages')[0].scrollHeight);
@@ -49,11 +44,58 @@ $(document).ready(function() {
             }
         });
     }, 5000);
+
+    $('#add-command-show-button').click(function() {
+        $('#add-command').show();
+        $('#add-command-show-button').hide();
+        $('#status').html('');
+    });
+
+    $('#add-command-hide-button').click(function() {
+        $('#add-command').hide();
+        $('#add-command-show-button').show();
+        $('#status').html('');
+    });
+
+    $('#add-command-button').click(function() {
+        var command = $('#command').val();
+
+        if (command === '') {
+            $('#status').html('<p style="color: red;">Command cannot be empty</p>');
+            return;
+        }
+
+        $('#status').html('');
+        $.ajax({
+            url: '/suggest',
+            type: 'POST',
+            ContentType: 'application/x-www-form-urlencoded',
+            data: { 'playerToken': playerToken, 'command': command }
+        }).done(function(response){
+            $('#command').val('');
+            $('#add-command').hide();
+            $('#add-command-show-button').show();
+
+            $('#status').html('<p style="color: green;">Command sent successfully</p>');
+        }).fail(function(jqXHR, textStatus, errorThrown){
+            $('#status').html('<p style="color: red;">Failed to send command<br/>Error: ' + jqXHR.responseText + '</p>');
+        });
+    });
 });
 </script>
 </head>
 <body>
 <p>Last King's commands:</p>
 <div id="messages" style="height: 200px; border: 1px solid black; overflow-y: scroll;"></div>
+<div>
+    <p>
+    <button id="add-command-show-button">Add command</button>
+    <div id="add-command" style="display: none;">
+        <input type="text" id="command" placeholder="Enter a command" autocomplete="off" />
+        <button id="add-command-button">Send</button>
+        <button id="add-command-hide-button">Cancel</button>
+    </div></p>
+    <div id="status"></div>
+</div>
 </body>
 </html>
