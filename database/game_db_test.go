@@ -480,6 +480,8 @@ func TestAddWebUser(t *testing.T) {
 
 	assert.False(db.DoesSessionExist(sessionId))
 	assert.False(db.DoesWebUserExist(webUserToken))
+	_, isFound = db.GetWebUserId(webUserToken)
+	assert.False(isFound)
 }
 
 func TestRemoveWebUser(t *testing.T) {
