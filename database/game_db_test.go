@@ -481,3 +481,71 @@ func TestAddWebUser(t *testing.T) {
 	assert.False(db.DoesSessionExist(sessionId))
 	assert.False(db.DoesWebUserExist(webUserToken))
 }
+
+func TestRecentlySentCommands(t *testing.T) {
+	assert := require.New(t)
+	db := createDbAndConnect(t)
+	defer clearDb()
+	if db == nil {
+		t.Fail()
+		return
+	}
+	defer db.Disconnect()
+
+	userId := db.GetOrCreateTelegramUserId(123, "", "test")
+	sessionId, _, _ := db.CreateSession(userId)
+
+	// check that there were no messages
+
+	db.AddRecentlySentCommand(sessionId, "command1", 10)
+	db.AddRecentlySentCommand(sessionId, "command2", 10)
+	db.AddRecentlySentCommand(sessionId, "command3", 10)
+
+	{
+		commands, newLastIndex := db.GetNewRecentlySentCommands(sessionId, -1)
+		assert.Equal(3, len(commands))
+		assert.Equal(2, newLastIndex)
+		assert.Equal("command1", commands[0])
+		assert.Equal("command2", commands[1])
+		assert.Equal("command3", commands[2])
+	}
+
+	{
+		commands, newLastIndex := db.GetNewRecentlySentCommands(sessionId, 0)
+		assert.Equal(2, len(commands))
+		assert.Equal(2, newLastIndex)
+		assert.Equal("command2", commands[0])
+		assert.Equal("command3", commands[1])
+	}
+
+	{
+		commands, newLastIndex := db.GetNewRecentlySentCommands(sessionId, 1)
+		assert.Equal(1, len(commands))
+		assert.Equal(2, newLastIndex)
+		assert.Equal("command3", commands[0])
+	}
+
+	{
+		commands, newLastIndex := db.GetNewRecentlySentCommands(sessionId, 2)
+		assert.Equal(0, len(commands))
+		assert.Equal(2, newLastIndex)
+	}
+
+	db.AddRecentlySentCommand(sessionId, "command4", 2)
+
+	{
+		commands, newLastIndex := db.GetNewRecentlySentCommands(sessionId, 0)
+		assert.Equal(2, len(commands))
+		assert.Equal(3, newLastIndex)
+		assert.Equal("command3", commands[0])
+		assert.Equal("command4", commands[1])
+	}
+
+	db.LeaveSession(userId)
+
+	{
+		commands, newLastIndex := db.GetNewRecentlySentCommands(sessionId, 0)
+		assert.Equal(0, len(commands))
+		assert.Equal(0, newLastIndex)
+	}
+}
