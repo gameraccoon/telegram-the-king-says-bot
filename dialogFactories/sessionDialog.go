@@ -71,8 +71,10 @@ func shareLink(sessionId int64, data *processing.ProcessData) bool {
 		config = static.StaticConfiguration{}
 	}
 
+	data.SendMessage("Share this link with your friends to invite them to the game:")
+
 	data.SendMessage(fmt.Sprintf(
-		"Share this link:\n%s/invite/%s",
+		"Link to join the game:\n%s/invite/%s",
 		config.ShareWebAddress,
 		sessionToken,
 	))
