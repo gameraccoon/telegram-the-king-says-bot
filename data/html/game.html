@@ -22,6 +22,17 @@
 <script>
 var playerToken = "";
 var lastMessageIdx = -1;
+
+function addToTextareaAtCursorPos(textarea, text) {
+    var cursorPos = textarea.prop('selectionStart');
+    var textBefore = textarea.val().substring(0, cursorPos);
+    var textAfter = textarea.val().substring(cursorPos);
+    textarea.val(textBefore + text + textAfter);
+    textarea.focus();
+    textarea.prop('selectionStart', cursorPos + text.length);
+    textarea.prop('selectionEnd', cursorPos + text.length);
+}
+
 function requestUpdateContent() {
     $.ajax({
         url: '/messages',
@@ -159,11 +170,11 @@ $(document).ready(function() {
     <p><button id="add-command-show-button">Add king's command</button></p>
         <div id="add-command" style="display: none; text-align: -moz-center;">
             <div style="font-size: 12px; text-align: left; width: fit-content; margin: 0 auto;">
-            Placeholders (click to copy):<br/>
-            <button onclick="navigator.clipboard.writeText('🎲');">🎲</button> - Random player<br/>
-            <button onclick="navigator.clipboard.writeText('🎩');">🎩</button> - Random boy<br/>
-            <button onclick="navigator.clipboard.writeText('👒');">👒</button> - Random girl<br/>
-                <button onclick="navigator.clipboard.writeText('💙');">💙</button><button onclick="navigator.clipboard.writeText('❤️');">❤️</button> - Two random players of opposite gender
+                Placeholders (click to use):<br/>
+                <button onclick="addToTextareaAtCursorPos($('#command'), '🎲');">🎲</button> - Random player<br/>
+                <button onclick="addToTextareaAtCursorPos($('#command'), '🎩');">🎩</button> - Random boy<br/>
+                <button onclick="addToTextareaAtCursorPos($('#command'), '👒');">👒</button> - Random girl<br/>
+                <button onclick="addToTextareaAtCursorPos($('#command'), '💙');">💙</button><button onclick="addToTextareaAtCursorPos($('#command'), '❤️');">❤️</button> - Two random players of opposite gender
             </div>
             <p><textarea id="command" placeholder="Enter a command" autocomplete="off" rows="4" cols="50" style="max-width: -moz-available;"></textarea></p>
             <p><button id="add-command-button">Add to the queue</button>
