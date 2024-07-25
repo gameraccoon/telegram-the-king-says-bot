@@ -505,6 +505,10 @@ func (database *GameDb) GetUsersCountInSession(sessionId int64, onlyTelegramUser
 	database.mutex.Lock()
 	defer database.mutex.Unlock()
 
+	return database.getUsersCountInSessionUnsafe(sessionId, onlyTelegramUsers)
+}
+
+func (database *GameDb) getUsersCountInSessionUnsafe(sessionId int64, onlyTelegramUsers bool) (usersCount int64) {
 	var request string
 	if onlyTelegramUsers {
 		request = fmt.Sprintf("SELECT COUNT(*) FROM users JOIN telegram_users ON users.id=telegram_users.user_id WHERE current_session=%d", sessionId)
@@ -578,18 +582,14 @@ func (database *GameDb) LeaveSession(userId int64) (sessionId int64, wasInSessio
 	database.db.Exec(fmt.Sprintf("UPDATE OR ROLLBACK users SET current_session=NULL, current_session_idle_count=0 WHERE id=%d", userId))
 
 	// delete session if it doesn't have Telegram users in it
-	database.mutex.Unlock()
-	if database.GetUsersCountInSession(sessionId, true) == 0 {
-		database.mutex.Lock()
+	if database.getUsersCountInSessionUnsafe(sessionId, true) == 0 {
 		database.db.Exec(fmt.Sprintf("DELETE FROM session_commands WHERE session_id=%d", sessionId))
 		database.db.Exec(fmt.Sprintf("DELETE FROM recently_sent_commands WHERE session_id=%d", sessionId))
 		database.db.Exec(fmt.Sprintf("DELETE FROM sessions WHERE id=%d", sessionId))
 		database.db.Exec(fmt.Sprintf("DELETE FROM web_users WHERE user_id IN (SELECT id FROM users WHERE current_session=%d)", sessionId))
 		// the remaining users that have this session is the web users that we just deleted
 		database.db.Exec(fmt.Sprintf("DELETE FROM users WHERE current_session=%d", sessionId))
-		database.mutex.Unlock()
 	}
-	database.mutex.Lock()
 
 	return
 }
