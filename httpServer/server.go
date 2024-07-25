@@ -29,7 +29,7 @@ func invitePage(w http.ResponseWriter, r *http.Request, db *database.GameDb) {
 	}
 }
 
-func joinGame(w http.ResponseWriter, r *http.Request, db *database.GameDb) {
+func joinGame(w http.ResponseWriter, r *http.Request, db *database.GameDb, staticData *processing.StaticProccessStructs) {
 	if r.Method != "POST" {
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
 		return
@@ -88,6 +88,8 @@ func joinGame(w http.ResponseWriter, r *http.Request, db *database.GameDb) {
 		http.Error(w, "Can't add new user, try again", http.StatusBadRequest)
 		return
 	}
+
+	staticFunctions.UpdateSessionDialogs(sessionId, staticData)
 
 	stringToken := strconv.FormatInt(token, 10)
 
@@ -163,7 +165,7 @@ func getLastMessages(w http.ResponseWriter, r *http.Request, db *database.GameDb
 	_, err = w.Write([]byte("{\"lastMessageIdx\":" + strconv.Itoa(newLastIdx) + ",\"messages\":[\"" + messagesStr + "\"]}"))
 }
 
-func suggestCommand(w http.ResponseWriter, r *http.Request, db *database.GameDb) {
+func suggestCommand(w http.ResponseWriter, r *http.Request, db *database.GameDb, staticData *processing.StaticProccessStructs) {
 	if r.Method != "POST" {
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
 		return
@@ -206,6 +208,8 @@ func suggestCommand(w http.ResponseWriter, r *http.Request, db *database.GameDb)
 	}
 
 	db.AddSessionSuggestedCommand(sessionId, command)
+
+	staticFunctions.UpdateSessionDialogs(sessionId, staticData)
 
 	_, err = w.Write([]byte("ok"))
 	if err != nil {
@@ -264,7 +268,7 @@ func revealSuggestedCommand(w http.ResponseWriter, r *http.Request, db *database
 	_, err = w.Write([]byte("ok"))
 }
 
-func leaveGame(w http.ResponseWriter, r *http.Request, db *database.GameDb) {
+func leaveGame(w http.ResponseWriter, r *http.Request, db *database.GameDb, staticData *processing.StaticProccessStructs) {
 	if r.Method != "POST" {
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
 		return
@@ -288,7 +292,21 @@ func leaveGame(w http.ResponseWriter, r *http.Request, db *database.GameDb) {
 		return
 	}
 
+	userId, isFound := db.GetWebUserId(playerToken)
+	if !isFound {
+		http.Error(w, "Player not found, has the game ended?", http.StatusNotFound)
+		return
+	}
+
+	sessionId, isInSession := db.GetUserSession(userId)
+	if !isInSession {
+		http.Error(w, "Player not in session, has the game ended?", http.StatusNotFound)
+		return
+	}
+
 	db.RemoveWebUser(playerToken)
+
+	staticFunctions.UpdateSessionDialogs(sessionId, staticData)
 
 	_, err = w.Write([]byte("ok"))
 	if err != nil {
@@ -304,7 +322,7 @@ func HandleHttpRequests(port int, staticData *processing.StaticProccessStructs) 
 		invitePage(w, r, db)
 	})
 	http.HandleFunc("/join", func(w http.ResponseWriter, r *http.Request) {
-		joinGame(w, r, db)
+		joinGame(w, r, db, staticData)
 	})
 	http.HandleFunc("/game/", func(w http.ResponseWriter, r *http.Request) {
 		gamePage(w, r)
@@ -313,13 +331,13 @@ func HandleHttpRequests(port int, staticData *processing.StaticProccessStructs) 
 		getLastMessages(w, r, db)
 	})
 	http.HandleFunc("/suggest", func(w http.ResponseWriter, r *http.Request) {
-		suggestCommand(w, r, db)
+		suggestCommand(w, r, db, staticData)
 	})
 	http.HandleFunc("/reveal", func(w http.ResponseWriter, r *http.Request) {
 		revealSuggestedCommand(w, r, db, staticData)
 	})
 	http.HandleFunc("/leave", func(w http.ResponseWriter, r *http.Request) {
-		leaveGame(w, r, db)
+		leaveGame(w, r, db, staticData)
 	})
 
 	addr := ":" + strconv.Itoa(port)
