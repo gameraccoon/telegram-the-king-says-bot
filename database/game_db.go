@@ -846,7 +846,7 @@ func (database *GameDb) AddWebUser(sessionId int64, token int64, name string, ge
 		log.Fatal(err.Error())
 	}
 
-	database.db.Exec(fmt.Sprintf("INSERT INTO users (name, gender, current_session, current_session_idle_count) VALUES ('%s', %d, %d, 0)", dbBase.SanitizeString(name), sessionId, gender))
+	database.db.Exec(fmt.Sprintf("INSERT INTO users (name, gender, current_session, current_session_idle_count) VALUES ('%s', %d, %d, 0)", dbBase.SanitizeString(name), gender, sessionId))
 
 	userId := database.getLastInsertedItemId()
 

@@ -445,12 +445,12 @@ func TestAddWebUser(t *testing.T) {
 
 	assert.False(db.DoesWebUserExist(webUserToken))
 
-	wasAdded := db.AddWebUser(sessionId, webUserToken, "test name", 1)
+	wasAdded := db.AddWebUser(sessionId, webUserToken, "test name", 2)
 	assert.True(wasAdded)
 
 	assert.True(db.DoesWebUserExist(webUserToken))
 
-	wasAdded = db.AddWebUser(sessionId, webUserToken, "test name 2", 0)
+	wasAdded = db.AddWebUser(sessionId, webUserToken, "test name 2", 1)
 	assert.False(wasAdded) // same token
 
 	assert.Equal(int64(1), db.GetUsersCountInSession(sessionId, true))
@@ -464,7 +464,7 @@ func TestAddWebUser(t *testing.T) {
 			continue
 		}
 		assert.Equal("test name", db.GetUserName(user))
-		assert.Equal(1, db.GetUserGender(user))
+		assert.Equal(2, db.GetUserGender(user))
 		userSessionId, isInSession := db.GetUserSession(user)
 		assert.True(isInSession)
 		assert.Equal(sessionId, userSessionId)
@@ -473,7 +473,7 @@ func TestAddWebUser(t *testing.T) {
 	webUserId, isFound := db.GetWebUserId(webUserToken)
 	assert.True(isFound)
 
-	assert.Equal([]SessionUserInfo{{userId, 123, "test", 0, 0, false}, {webUserId, 10, "test name", 1, 0, true}}, db.GetUsersInSessionInfo(sessionId))
+	assert.Equal([]SessionUserInfo{{userId, 123, "test", 0, 0, false}, {webUserId, 10, "test name", 2, 0, true}}, db.GetUsersInSessionInfo(sessionId))
 
 	// web users are not counted for the session survival
 	db.LeaveSession(userId)
