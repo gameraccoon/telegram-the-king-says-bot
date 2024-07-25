@@ -115,7 +115,7 @@ func processCommand(data *processing.ProcessData, dialogManager *dialogManager.D
 	}
 
 	// if we here that means that no command was processed
-	data.SendMessage(data.Trans("help_info"))
+	sendSessionOrHelp(data)
 	return false
 }
 
@@ -125,6 +125,15 @@ func processPlainMessage(data *processing.ProcessData, dialogManager *dialogMana
 	success := dialogManager.ProcessText(data)
 
 	if !success {
+		sendSessionOrHelp(data)
+	}
+}
+
+func sendSessionOrHelp(data *processing.ProcessData) {
+	_, isInSession := staticFunctions.GetDb(data.Static).GetUserSession(data.UserId)
+	if isInSession {
+		staticFunctions.SendSessionDialog(data)
+	} else {
 		data.SendMessage(data.Trans("help_info"))
 	}
 }
