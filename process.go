@@ -125,11 +125,6 @@ func processPlainMessage(data *processing.ProcessData, dialogManager *dialogMana
 	success := dialogManager.ProcessText(data)
 
 	if !success {
-		sessionId, isInSession := staticFunctions.GetDb(data.Static).GetUserSession(data.UserId)
-		if isInSession {
-			staticFunctions.SendAdvancedCommand(data, sessionId, data.Message)
-		} else {
-			data.SendMessage(data.Trans("help_info"))
-		}
+		data.SendMessage(data.Trans("help_info"))
 	}
 }
