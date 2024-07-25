@@ -32,15 +32,8 @@ button {
 </style>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 <script>
-var gameId = "{{.GameId}}";
-
 $(document).ready(function() {
-    if (gameId === "") {
-        $('#no-game').show();
-    } else {
-        $('#invite').show();
-    }
-    $('#default').hide();
+    var gameId = window.location.pathname.split('/').pop();
 
     $('#show-options').click(function() {
         $('#options').show();
@@ -72,34 +65,23 @@ $(document).ready(function() {
 </script>
 </head>
 <body>
-<div id="default">
-    <p>Something went wrong, make sure JavaScript is enabled in your browser</p>
-</div>
-<div id="no-game" style="display: none;">
-    <p>The game you are trying to join does not exist.</p>
-    <p>Ask the host of the game to share the active link with you.</p>
-    <p>Or create a new game:</p>
-    <a href="https://telegram.me/TheKingSaysBot">Open in Telegram</a>
-</div>
-<div id="invite" style="display: none;">
     <p>You are joining by invite link</p>
     <button id="open-in-telegram">Continue in Telegram</button>
     <p>or</p>
     <button id="show-options">Join from web</button>
 
-    <div id="options" style="display: none;">
-        <p>Choose your name</p>
-        <input type="text" id="name" placeholder="Your name" maxlength="20">
-        <p>Choose your gender</p>
-        <select id="gender">
-            <option value="g">Girl</option>
-            <option value="b">Boy</option>
-            <option value="a">Both</option>
-            <option value="n">None</option>
-        </select>
-        <br/><br/>
-        <button id="join">Join</button>
-    </div>
+<div id="options" style="display: none;">
+    <p>Choose your name</p>
+    <input type="text" id="name" placeholder="Your name" maxlength="20">
+    <p>Choose your gender</p>
+    <select id="gender">
+        <option value="g">Girl</option>
+        <option value="b">Boy</option>
+        <option value="a">Both</option>
+        <option value="n">None</option>
+    </select>
+    <br/><br/>
+    <button id="join">Join</button>
 </div>
 </body>
 </html>

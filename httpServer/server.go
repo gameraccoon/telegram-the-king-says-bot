@@ -1,12 +1,10 @@
 package httpServer
 
 import (
-	"bytes"
 	"github.com/gameraccoon/telegram-the-king-says-bot/database"
 	"log"
 	"math/rand/v2"
 	"net/http"
-	"os"
 	"strconv"
 )
 
@@ -15,12 +13,6 @@ func homePage(w http.ResponseWriter, r *http.Request) {
 }
 
 func invitePage(w http.ResponseWriter, r *http.Request, db *database.GameDb) {
-	content, err := os.ReadFile("data/html/invite.html")
-	if err != nil {
-		http.Error(w, "Can't read invite.html", http.StatusInternalServerError)
-		return
-	}
-
 	gameToken := r.URL.Path[len("/invite/"):]
 	if gameToken == "" {
 		http.Error(w, "Incorrect URL", http.StatusBadRequest)
@@ -28,13 +20,11 @@ func invitePage(w http.ResponseWriter, r *http.Request, db *database.GameDb) {
 	}
 
 	_, isFound := db.GetSessionIdFromToken(gameToken)
-	if !isFound {
-		gameToken = ""
+	if isFound {
+		http.ServeFile(w, r, "data/html/invite.html")
+	} else {
+		http.ServeFile(w, r, "data/html/invite_no_session.html")
 	}
-
-	content = bytes.ReplaceAll(content, []byte("{{.GameId}}"), []byte(gameToken))
-
-	_, err = w.Write(content)
 }
 
 func joinGame(w http.ResponseWriter, r *http.Request, db *database.GameDb) {
@@ -58,7 +48,7 @@ func joinGame(w http.ResponseWriter, r *http.Request, db *database.GameDb) {
 
 	sessionId, isFound := db.GetSessionIdFromToken(gameId)
 	if !isFound {
-		http.Error(w, "Game not found. Did the host delete it?", http.StatusBadRequest)
+		http.Error(w, "Game not found. Was it ended?", http.StatusBadRequest)
 		return
 	}
 
