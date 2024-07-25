@@ -71,7 +71,7 @@ func makeAllUpdaters() []dbUpdater {
 				db.db.Exec("UPDATE users SET current_session_idle_count = 0 WHERE current_session_idle_count IS NULL")
 
 				// for each 'users' record create a new record in the 'telegram_users' table
-				rows, err := db.db.Query("SELECT id, chat_id, language, ftue_completed, current_session_message FROM users")
+				rows, err := db.db.Query("SELECT id, chat_id, language, ftue_completed, IFNULL(current_session_message, 0) FROM users")
 				if err != nil {
 					log.Fatalf("Error while selecting users: %s", err)
 				}
@@ -103,7 +103,11 @@ func makeAllUpdaters() []dbUpdater {
 				}
 
 				for _, data := range dataToTransfer {
-					db.db.Exec(fmt.Sprintf("INSERT INTO telegram_users (user_id, chat_id, language, ftue_completed, current_session_message) VALUES (%d, %d, '%s', %t, %d)", data[0], data[1], data[2], data[3], data[4]))
+					currentSessionMessage := fmt.Sprintf("%d", data[4])
+					if currentSessionMessage == "0" {
+						currentSessionMessage = "NULL"
+					}
+					db.db.Exec(fmt.Sprintf("INSERT INTO telegram_users (user_id, chat_id, language, ftue_completed, current_session_message) VALUES (%d, %d, '%s', %t, %s)", data[0], data[1], data[2], data[3], currentSessionMessage))
 				}
 
 				// remove unused columns from 'users' table
