@@ -100,8 +100,31 @@ func joinGame(w http.ResponseWriter, r *http.Request, db *database.GameDb, stati
 	}
 }
 
-func gamePage(w http.ResponseWriter, r *http.Request) {
-	http.ServeFile(w, r, "data/html/game.html")
+func gamePage(w http.ResponseWriter, r *http.Request, db *database.GameDb) {
+	if r.Method != "GET" {
+		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// get player token from URL
+	playerTokenStr := r.URL.Path[len("/game/"):]
+	if playerTokenStr == "" {
+		http.Error(w, "Incorrect URL", http.StatusBadRequest)
+		return
+	}
+
+	playerToken, err := strconv.ParseInt(playerTokenStr, 10, 64)
+	if err != nil {
+		http.Error(w, "Incorrect player token", http.StatusBadRequest)
+		return
+	}
+
+	_, isFound := db.GetWebUserId(playerToken)
+	if isFound {
+		http.ServeFile(w, r, "data/html/game.html")
+	} else {
+		http.ServeFile(w, r, "data/html/invite_no_session.html")
+	}
 }
 
 func getLastMessages(w http.ResponseWriter, r *http.Request, db *database.GameDb) {
@@ -334,7 +357,7 @@ func HandleHttpRequests(port int, staticData *processing.StaticProccessStructs) 
 		joinGame(w, r, db, staticData)
 	})
 	http.HandleFunc("/game/", func(w http.ResponseWriter, r *http.Request) {
-		gamePage(w, r)
+		gamePage(w, r, db)
 	})
 	http.HandleFunc("/messages", func(w http.ResponseWriter, r *http.Request) {
 		getLastMessages(w, r, db)
