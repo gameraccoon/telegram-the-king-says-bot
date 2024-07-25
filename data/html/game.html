@@ -81,6 +81,42 @@ $(document).ready(function() {
             $('#status').html('<p style="color: red;">Failed to send command<br/>Error: ' + jqXHR.responseText + '</p>');
         });
     });
+
+    $('#reveal-suggestion-button').click(function() {
+        $.ajax({
+            url: '/reveal',
+            type: 'POST',
+            ContentType: 'application/x-www-form-urlencoded',
+            data: { 'playerToken': playerToken }
+        }).done(function(response){
+            $('#status').html('<p style="color: green;">Suggested command sent successfully</p>');
+        }).fail(function(jqXHR, textStatus, errorThrown){
+            $('#status').html('<p style="color: red;">Failed to send suggested command<br/>Error: ' + jqXHR.responseText + '</p>');
+        });
+    });
+
+    $('#leave-game-button').click(function() {
+        $('#leave-confirmation').show();
+        $('#leave-game-button').hide();
+    });
+
+    $('#leave-yes-button').click(function() {
+        $.ajax({
+            url: '/leave',
+            type: 'POST',
+            ContentType: 'application/x-www-form-urlencoded',
+            data: { 'playerToken': playerToken }
+        }).done(function(response){
+            window.location.href = '/';
+        }).fail(function(jqXHR, textStatus, errorThrown){
+            $('#status').html('<p style="color: red;">Failed to leave the game<br/>Error: ' + jqXHR.responseText + '</p>');
+        });
+    });
+
+    $('#leave-no-button').click(function() {
+        $('#leave-confirmation').hide();
+        $('#leave-game-button').show();
+    });
 });
 </script>
 </head>
@@ -94,6 +130,13 @@ $(document).ready(function() {
         <input type="text" id="command" placeholder="Enter a command" autocomplete="off" />
         <button id="add-command-button">Send</button>
         <button id="add-command-hide-button">Cancel</button>
+    </div></p>
+    <p><button id="reveal-suggestion-button">Send one suggested command</button></p>
+    <p><button id="leave-game-button">Leave the game</button></p>
+    <p><div id="leave-confirmation" style="display: none;">
+        <p>Are you sure you want to leave the game?</p>
+        <button id="leave-yes-button">Yes</button>
+        <button id="leave-no-button">No</button>
     </div></p>
     <div id="status"></div>
 </div>

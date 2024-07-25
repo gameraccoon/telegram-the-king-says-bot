@@ -126,7 +126,7 @@ func getLastMessages(w http.ResponseWriter, r *http.Request, db *database.GameDb
 
 	userId, isFound := db.GetWebUserId(playerToken)
 	if !isFound {
-		http.Error(w, "Player not found, was the game ended?", http.StatusNotFound)
+		http.Error(w, "Player not found, has the game ended?", http.StatusNotFound)
 		return
 	}
 
@@ -144,7 +144,7 @@ func getLastMessages(w http.ResponseWriter, r *http.Request, db *database.GameDb
 
 	sessionId, isInSession := db.GetUserSession(userId)
 	if !isInSession {
-		http.Error(w, "Player not in session, was the game ended?", http.StatusNotFound)
+		http.Error(w, "Player not in session, has the game ended?", http.StatusNotFound)
 		return
 	}
 
@@ -187,13 +187,13 @@ func suggestCommand(w http.ResponseWriter, r *http.Request, db *database.GameDb)
 
 	userId, isFound := db.GetWebUserId(playerToken)
 	if !isFound {
-		http.Error(w, "Player not found, was the game ended?", http.StatusNotFound)
+		http.Error(w, "Player not found, has the game ended?", http.StatusNotFound)
 		return
 	}
 
 	sessionId, isInSession := db.GetUserSession(userId)
 	if !isInSession {
-		http.Error(w, "Player not in session, was the game ended?", http.StatusNotFound)
+		http.Error(w, "Player not in session, has the game ended?", http.StatusNotFound)
 		return
 	}
 
@@ -204,6 +204,79 @@ func suggestCommand(w http.ResponseWriter, r *http.Request, db *database.GameDb)
 	}
 
 	db.AddSessionSuggestedCommand(sessionId, command)
+
+	_, err = w.Write([]byte("ok"))
+	if err != nil {
+		return
+	}
+}
+
+func revealSuggestedCommand(w http.ResponseWriter, r *http.Request, db *database.GameDb) {
+	if r.Method != "POST" {
+		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+		return
+	}
+
+	err := r.ParseForm()
+	if err != nil {
+		http.Error(w, "Can't parse form", http.StatusBadRequest)
+		return
+	}
+
+	playerTokenStr := r.Form.Get("playerToken")
+	if playerTokenStr == "" {
+		http.Error(w, "Incorrect player token", http.StatusBadRequest)
+		return
+	}
+
+	playerToken, err := strconv.ParseInt(playerTokenStr, 10, 64)
+	if err != nil {
+		http.Error(w, "Incorrect player token", http.StatusBadRequest)
+		return
+	}
+
+	userId, isFound := db.GetWebUserId(playerToken)
+	if !isFound {
+		http.Error(w, "Player not found, has the game ended?", http.StatusNotFound)
+		return
+	}
+
+	_ /*sessionId*/, isInSession := db.GetUserSession(userId)
+	if !isInSession {
+		http.Error(w, "Player not in session, has the game ended?", http.StatusNotFound)
+		return
+	}
+
+	// HERE WE NEED TO TALK TO TELEGRAM BOT TO GET THE COMMAND
+
+	_, err = w.Write([]byte("ok"))
+}
+
+func leaveGame(w http.ResponseWriter, r *http.Request, db *database.GameDb) {
+	if r.Method != "POST" {
+		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+		return
+	}
+
+	err := r.ParseForm()
+	if err != nil {
+		http.Error(w, "Can't parse form", http.StatusBadRequest)
+		return
+	}
+
+	playerTokenStr := r.Form.Get("playerToken")
+	if playerTokenStr == "" {
+		http.Error(w, "Incorrect player token", http.StatusBadRequest)
+		return
+	}
+
+	playerToken, err := strconv.ParseInt(playerTokenStr, 10, 64)
+	if err != nil {
+		http.Error(w, "Incorrect player token", http.StatusBadRequest)
+		return
+	}
+
+	db.RemoveWebUser(playerToken)
 
 	_, err = w.Write([]byte("ok"))
 	if err != nil {
@@ -227,6 +300,12 @@ func HandleHttpRequests(port int, db *database.GameDb) {
 	})
 	http.HandleFunc("/suggest", func(w http.ResponseWriter, r *http.Request) {
 		suggestCommand(w, r, db)
+	})
+	http.HandleFunc("/reveal", func(w http.ResponseWriter, r *http.Request) {
+		revealSuggestedCommand(w, r, db)
+	})
+	http.HandleFunc("/leave", func(w http.ResponseWriter, r *http.Request) {
+		leaveGame(w, r, db)
 	})
 
 	addr := ":" + strconv.Itoa(port)
