@@ -8,6 +8,7 @@ import (
 	"math/rand/v2"
 	"net/http"
 	"strconv"
+	"strings"
 )
 
 func homePage(w http.ResponseWriter, r *http.Request) {
@@ -160,7 +161,10 @@ func getLastMessages(w http.ResponseWriter, r *http.Request, db *database.GameDb
 		if i > 0 {
 			messagesStr += "\",\""
 		}
-		messagesStr += message
+
+		sanitizedString := strings.Replace(message, "\n", " ", -1)
+		sanitizedString = strings.Replace(sanitizedString, "\"", "\\\"", -1)
+		messagesStr += sanitizedString
 	}
 
 	suggestedCount := db.GetSessionSuggestedCommandCount(sessionId)
