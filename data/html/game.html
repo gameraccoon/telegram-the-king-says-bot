@@ -10,7 +10,7 @@
         text-align: center;
         margin: 20px;
     }
-    #suggestions_count {
+    span {
         font-size: 12px;
         color: gray;
     }
@@ -50,6 +50,8 @@ function requestUpdateContent() {
             } else {
                 $('#reveal-suggestion-button').prop('disabled', true);
             }
+
+            $('#players_count').html('' + response.players + ' players in the game');
         }
     });
 }
@@ -141,6 +143,7 @@ $(document).ready(function() {
 <body>
 <p>Last King's commands:</p>
 <div id="messages" style="height: 200px; border: 1px solid black; overflow-y: scroll;"></div>
+<span id="players_count"></span>
 <div>
     <p>
         <button id="add-command-show-button">Add king's command</button>
