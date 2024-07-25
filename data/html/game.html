@@ -66,6 +66,9 @@ $(document).ready(function() {
         $('#add-command').show();
         $('#add-command-show-button').hide();
         $('#status').html('');
+        $('#command').focus();
+        $('#show-examples-button').show();
+        $('#examples').hide();
     });
 
     $('#add-command-hide-button').click(function() {
@@ -137,34 +140,51 @@ $(document).ready(function() {
         $('#leave-confirmation').hide();
         $('#leave-game-button').show();
     });
+
+    $('#show-examples-button').click(function() {
+        $('#examples').toggle();
+        $('#show-examples-button').hide();
+    });
 });
 </script>
 </head>
 <body>
-<p>Last King's commands:</p>
+<p>Last king's commands:</p>
 <div id="messages" style="height: 200px; border: 1px solid black; overflow-y: scroll;"></div>
 <span id="players_count"></span>
 <div>
-    <p>
-        <button id="add-command-show-button">Add king's command</button>
+    <p><button id="add-command-show-button">Add king's command</button></p>
         <div id="add-command" style="display: none;">
+            <div style="font-size: 12px; text-align: left;">
+            Placeholders (click to copy):<br/>
+            <button onclick="navigator.clipboard.writeText('🎲');">🎲</button> - Random player<br/>
+            <button onclick="navigator.clipboard.writeText('🎩');">🎩</button> - Random boy<br/>
+            <button onclick="navigator.clipboard.writeText('👒');">👒</button> - Random girl<br/>
+                <button onclick="navigator.clipboard.writeText('💙');">💙</button><button onclick="navigator.clipboard.writeText('❤️');">❤️</button> - Two random players of opposite gender
+            </div>
+            <p>
             <input type="text" id="command" placeholder="Enter a command" autocomplete="off" />
             <button id="add-command-button">Send</button>
-            <button id="add-command-hide-button">Cancel</button>
+            <button id="add-command-hide-button">Cancel</button></p>
+            <button style="font-size: 12px;" id="show-examples-button">Show examples</button>
+            <div id="examples" style="display: none; text-align: left; font-size: 12px;">
+            <p>Examples:</p>
+            <p>🎲 says something nice to the player on his/her right</p>
+            <p>🎩 and 👒 exchange places</p>
+            <p>💙 and 💙 make compliments to ❤️</p>
+            <p>(note that it will be randomly chosen whether it will be two boys complimenting a girl or two girls complimenting a boy)</p>
+            </div>
         </div>
-    </p>
     <p>
         <button id="reveal-suggestion-button">Reveal a random command</button><br/>
         <span id="suggestions_count"></span>
     </p>
     <p><button id="leave-game-button">Leave the game</button></p>
-    <p>
-        <div id="leave-confirmation" style="display: none;">
-            <p>Are you sure you want to leave the game?</p>
-            <button id="leave-yes-button">Yes</button>
-            <button id="leave-no-button">No</button>
-        </div>
-    </p>
+    <div id="leave-confirmation" style="display: none;">
+        <p>Are you sure you want to leave the game?</p>
+        <button id="leave-yes-button">Yes</button>
+        <button id="leave-no-button">No</button>
+    </div>
     <div id="status"></div>
 </div>
 </body>
