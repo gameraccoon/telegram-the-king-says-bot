@@ -162,7 +162,10 @@ func getLastMessages(w http.ResponseWriter, r *http.Request, db *database.GameDb
 		}
 		messagesStr += message
 	}
-	_, err = w.Write([]byte("{\"lastMessageIdx\":" + strconv.Itoa(newLastIdx) + ",\"messages\":[\"" + messagesStr + "\"]}"))
+
+	suggestedCount := db.GetSessionSuggestedCommandCount(sessionId)
+
+	_, err = w.Write([]byte("{\"lastMessageIdx\":" + strconv.Itoa(newLastIdx) + ",\"suggestions\":" + strconv.FormatInt(suggestedCount, 10) + ",\"messages\":[\"" + messagesStr + "\"]}"))
 }
 
 func suggestCommand(w http.ResponseWriter, r *http.Request, db *database.GameDb, staticData *processing.StaticProccessStructs) {

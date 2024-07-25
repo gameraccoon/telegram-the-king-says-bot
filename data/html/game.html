@@ -10,40 +10,55 @@
         text-align: center;
         margin: 20px;
     }
+    #suggestions_count {
+        font-size: 12px;
+        color: gray;
+    }
 </style>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 <script>
-$(document).ready(function() {
-    var playerToken = window.location.pathname.split('/').pop();
-    var lastMessageIdx = -1;
+var playerToken = "";
+var lastMessageIdx = -1;
+function requestUpdateContent() {
+    $.ajax({
+        url: '/messages',
+        type: 'GET',
+        data: { 'playerToken': playerToken, 'lastMessageIdx': lastMessageIdx },
+        contentType: 'application/json',
+        success: function(response) {
+            var numMessages = response.messages.length;
 
-    setInterval(function() {
-        $.ajax({
-            url: '/messages',
-            type: 'GET',
-            data: { 'playerToken': playerToken, 'lastMessageIdx': lastMessageIdx },
-            contentType: 'application/json',
-            success: function(response) {
-                var numMessages = response.messages.length;
-
-                if (response.lastMessageIdx - lastMessageIdx > numMessages) {
-                    $('#messages').append('<p style="color: gray;">' + (response.lastMessageIdx - lastMessageIdx - numMessages) + ' old commands were not received</p>');
-                }
-
-                var newMessagesCount = response.lastMessageIdx - lastMessageIdx
-                var newMessages = response.messages.slice(-newMessagesCount);
-                newMessages.forEach(function(message) {
-                    $('#messages').append('<p>' + message + '</p>');
-                });
-
-                lastMessageIdx = response.lastMessageIdx;
-
-                if (newMessagesCount > 0) {
-                    $('#messages').scrollTop($('#messages')[0].scrollHeight);
-                }
+            if (response.lastMessageIdx - lastMessageIdx > numMessages) {
+                $('#messages').append('<p style="color: gray;">' + (response.lastMessageIdx - lastMessageIdx - numMessages) + ' old commands were not received</p>');
             }
-        });
-    }, 5000);
+
+            var newMessagesCount = response.lastMessageIdx - lastMessageIdx
+            var newMessages = response.messages.slice(-newMessagesCount);
+            newMessages.forEach(function(message) {
+                $('#messages').append('<p>' + message + '</p>');
+            });
+
+            lastMessageIdx = response.lastMessageIdx;
+
+            if (newMessagesCount > 0) {
+                $('#messages').scrollTop($('#messages')[0].scrollHeight);
+            }
+
+            $('#suggestions_count').html('' + response.suggestions + ' commands in the queue');
+            if (response.suggestions > 0) {
+                $('#reveal-suggestion-button').prop('disabled', false);
+            } else {
+                $('#reveal-suggestion-button').prop('disabled', true);
+            }
+        }
+    });
+}
+
+$(document).ready(function() {
+    playerToken = window.location.pathname.split('/').pop();
+
+    requestUpdateContent();
+    setInterval(requestUpdateContent, 5000);
 
     $('#add-command-show-button').click(function() {
         $('#add-command').show();
@@ -77,6 +92,8 @@ $(document).ready(function() {
             $('#add-command-show-button').show();
 
             $('#status').html('<p style="color: green;">Command sent successfully</p>');
+
+            requestUpdateContent();
         }).fail(function(jqXHR, textStatus, errorThrown){
             $('#status').html('<p style="color: red;">Failed to send command<br/>Error: ' + jqXHR.responseText + '</p>');
         });
@@ -90,6 +107,7 @@ $(document).ready(function() {
             data: { 'playerToken': playerToken }
         }).done(function(response){
             $('#status').html('<p style="color: green;">Suggested command sent successfully</p>');
+            requestUpdateContent();
         }).fail(function(jqXHR, textStatus, errorThrown){
             $('#status').html('<p style="color: red;">Failed to send suggested command<br/>Error: ' + jqXHR.responseText + '</p>');
         });
@@ -125,19 +143,25 @@ $(document).ready(function() {
 <div id="messages" style="height: 200px; border: 1px solid black; overflow-y: scroll;"></div>
 <div>
     <p>
-    <button id="add-command-show-button">Add command</button>
-    <div id="add-command" style="display: none;">
-        <input type="text" id="command" placeholder="Enter a command" autocomplete="off" />
-        <button id="add-command-button">Send</button>
-        <button id="add-command-hide-button">Cancel</button>
-    </div></p>
-    <p><button id="reveal-suggestion-button">Send one suggested command</button></p>
+        <button id="add-command-show-button">Add king's command</button>
+        <div id="add-command" style="display: none;">
+            <input type="text" id="command" placeholder="Enter a command" autocomplete="off" />
+            <button id="add-command-button">Send</button>
+            <button id="add-command-hide-button">Cancel</button>
+        </div>
+    </p>
+    <p>
+        <button id="reveal-suggestion-button">Reveal a random command</button><br/>
+        <span id="suggestions_count"></span>
+    </p>
     <p><button id="leave-game-button">Leave the game</button></p>
-    <p><div id="leave-confirmation" style="display: none;">
-        <p>Are you sure you want to leave the game?</p>
-        <button id="leave-yes-button">Yes</button>
-        <button id="leave-no-button">No</button>
-    </div></p>
+    <p>
+        <div id="leave-confirmation" style="display: none;">
+            <p>Are you sure you want to leave the game?</p>
+            <button id="leave-yes-button">Yes</button>
+            <button id="leave-no-button">No</button>
+        </div>
+    </p>
     <div id="status"></div>
 </div>
 </body>
