@@ -28,6 +28,7 @@ type StaticConfiguration struct {
 	Placeholders       PlaceholderInfos
 	RunHttpServer      bool
 	HttpServerPort     int
+	ShareWebAddress    string
 }
 
 func compilePlaceholder(placeholder *PlaceholderInfo) {
