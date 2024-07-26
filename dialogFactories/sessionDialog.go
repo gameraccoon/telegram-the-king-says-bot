@@ -79,6 +79,12 @@ func shareLink(sessionId int64, data *processing.ProcessData) bool {
 		sessionToken,
 	))
 
+	data.SendMessage(fmt.Sprintf(
+		"Or share this QR code:\nhttps://api.qrserver.com/v1/create-qr-code/?size=150x150&data=%s/invite/%s",
+		config.ShareWebAddress,
+		sessionToken,
+	))
+
 	return true
 }
 
