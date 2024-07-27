@@ -71,19 +71,21 @@ func shareLink(sessionId int64, data *processing.ProcessData) bool {
 		config = static.StaticConfiguration{}
 	}
 
-	data.SendMessage("Share this link with your friends to invite them to the game:")
+	data.SendMessage("Share this link with your friends to invite them to the game:", true)
 
 	data.SendMessage(fmt.Sprintf(
 		"Link to join the game:\n%s/invite/%s",
 		config.ShareWebAddress,
 		sessionToken,
-	))
+	),
+		true)
 
 	data.SendMessage(fmt.Sprintf(
 		"Or share this QR code:\nhttps://api.qrserver.com/v1/create-qr-code/?size=150x150&margin=10&data=%s/invite/%s",
 		config.ShareWebAddress,
 		sessionToken,
-	))
+	),
+		false)
 
 	return true
 }
@@ -93,7 +95,7 @@ func disconnectSession(sessionId int64, data *processing.ProcessData) bool {
 	currentSessionId, isInSession := db.GetUserSession(data.UserId)
 
 	if !isInSession || sessionId != currentSessionId {
-		data.SendMessage(data.Trans("session_is_too_old"))
+		data.SendMessage(data.Trans("session_is_too_old"), true)
 		return true
 	}
 
@@ -110,11 +112,11 @@ func suggestCommand(sessionId int64, data *processing.ProcessData) bool {
 	currentSessionId, isInSession := db.GetUserSession(data.UserId)
 
 	if !isInSession || sessionId != currentSessionId {
-		data.SendMessage(data.Trans("session_is_too_old"))
+		data.SendMessage(data.Trans("session_is_too_old"), true)
 		return true
 	}
 
-	data.SendMessage(data.Trans("suggest_command_msg"))
+	data.SendMessage(data.Trans("suggest_command_msg"), true)
 	data.Static.SetUserStateTextProcessor(data.UserId, &processing.AwaitingTextProcessorData{
 		ProcessorId:  "suggestCommand",
 		AdditionalId: sessionId,
@@ -127,7 +129,7 @@ func revealCommand(sessionId int64, data *processing.ProcessData) bool {
 	currentSessionId, isInSession := db.GetUserSession(data.UserId)
 
 	if !isInSession || sessionId != currentSessionId {
-		data.SendMessage(data.Trans("session_is_too_old"))
+		data.SendMessage(data.Trans("session_is_too_old"), true)
 		return true
 	}
 
@@ -137,7 +139,7 @@ func revealCommand(sessionId int64, data *processing.ProcessData) bool {
 	if isSucceeded {
 		staticFunctions.SendAdvancedCommand(data.Static, sessionId, command)
 	} else {
-		data.SendMessage(data.Trans("no_suggested_commands"))
+		data.SendMessage(data.Trans("no_suggested_commands"), true)
 	}
 
 	return true

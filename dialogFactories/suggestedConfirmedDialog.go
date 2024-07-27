@@ -39,11 +39,11 @@ func suggestAnother(sessionId int64, data *processing.ProcessData) bool {
 	currentSessionId, isInSession := db.GetUserSession(data.UserId)
 
 	if !isInSession || sessionId != currentSessionId {
-		data.SendMessage(data.Trans("session_is_too_old"))
+		data.SendMessage(data.Trans("session_is_too_old"), true)
 		return true
 	}
 
-	data.SendMessage(data.Trans("suggest_command_msg"))
+	data.SendMessage(data.Trans("suggest_command_msg"), true)
 	data.Static.SetUserStateTextProcessor(data.UserId, &processing.AwaitingTextProcessorData{
 		ProcessorId:  "suggestCommand",
 		AdditionalId: sessionId,

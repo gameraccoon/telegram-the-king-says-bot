@@ -21,15 +21,15 @@ func processChangeName(additionalId int64, data *processing.ProcessData) bool {
 	if len(data.Message) > 0 {
 		if len(data.Message) < 30 {
 			db.SetUserName(additionalId, data.Message)
-			data.SendMessage(data.Trans("name_changed"))
+			data.SendMessage(data.Trans("name_changed"), true)
 
 			staticFunctions.FirstSetUpStep3(data)
 			return true
 		} else {
-			data.SendMessage(data.Trans("name_too_long"))
+			data.SendMessage(data.Trans("name_too_long"), true)
 		}
 	} else {
-		data.SendMessage(data.Trans("invalid_name"))
+		data.SendMessage(data.Trans("invalid_name"), true)
 	}
 
 	data.Static.SetUserStateTextProcessor(data.UserId, &processing.AwaitingTextProcessorData{

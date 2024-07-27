@@ -51,7 +51,7 @@ func sendNumbers(data *processing.ProcessData, userIds []int64) {
 
 		chatId, isFound := db.GetTelegramUserChatId(userId)
 		if isFound {
-			data.Static.Chat.SendMessage(chatId, message, 0)
+			data.Static.Chat.SendMessage(chatId, message, 0, true)
 		}
 	}
 }
@@ -269,7 +269,7 @@ func SendAdvancedCommand(staticData *processing.StaticProccessStructs, sessionId
 	ResendSessionDialogs(sessionId, staticData)
 	for _, user := range users {
 		if !user.IsWebUser {
-			staticData.Chat.SendMessage(user.ChatId, message, 0)
+			staticData.Chat.SendMessage(user.ChatId, message, 0, true)
 		}
 	}
 

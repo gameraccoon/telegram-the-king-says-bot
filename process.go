@@ -15,10 +15,10 @@ func startCommand(data *processing.ProcessData) {
 	if len(data.Message) > 0 {
 		isSuccessful := staticFunctions.ConnectToSession(data, data.Message)
 		if !isSuccessful {
-			data.SendMessage(data.Trans("link_session_is_old"))
+			data.SendMessage(data.Trans("link_session_is_old"), true)
 		}
 	} else {
-		data.SendMessage(data.Trans("start_message"))
+		data.SendMessage(data.Trans("start_message"), true)
 	}
 
 	isSetupInProgress := staticFunctions.FirstSetUpStep1(data)
@@ -48,17 +48,17 @@ func sendNumbersToPlayers(data *processing.ProcessData) {
 	if isInSession {
 		staticFunctions.GiveRandomNumbersToPlayers(data, sessionId)
 	} else {
-		data.SendMessage(data.Trans("no_session_error"))
+		data.SendMessage(data.Trans("no_session_error"), true)
 	}
 }
 
 func helpCommand(data *processing.ProcessData) {
-	data.SendMessage(data.Trans("help_info"))
+	data.SendMessage(data.Trans("help_info"), true)
 }
 
 func cancelCommand(data *processing.ProcessData) {
 	data.Static.SetUserStateTextProcessor(data.UserId, nil)
-	data.SendMessage(data.Trans("command_canceled"))
+	data.SendMessage(data.Trans("command_canceled"), true)
 }
 
 func makeUserCommandProcessors() ProcessorFuncMap {
@@ -134,6 +134,6 @@ func sendSessionOrHelp(data *processing.ProcessData) {
 	if isInSession {
 		staticFunctions.SendSessionDialog(data)
 	} else {
-		data.SendMessage(data.Trans("help_info"))
+		data.SendMessage(data.Trans("help_info"), true)
 	}
 }

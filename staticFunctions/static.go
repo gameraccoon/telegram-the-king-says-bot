@@ -205,7 +205,7 @@ func FirstSetUpStep2(data *processing.ProcessData) {
 	db := GetDb(data.Static)
 
 	if !db.IsUserCompletedFTUE(data.UserId) {
-		data.SendMessage(data.Trans("enter_name"))
+		data.SendMessage(data.Trans("enter_name"), true)
 		data.Static.SetUserStateTextProcessor(data.UserId, &processing.AwaitingTextProcessorData{
 			ProcessorId:  "changeName",
 			AdditionalId: data.UserId,
