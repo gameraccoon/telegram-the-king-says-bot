@@ -52,6 +52,8 @@ func sendNumbers(data *processing.ProcessData, userIds []int64) {
 		chatId, isFound := db.GetTelegramUserChatId(userId)
 		if isFound {
 			data.Static.Chat.SendMessage(chatId, message, 0, true)
+		} else {
+			db.AddWebMessage(userId, message, 10)
 		}
 	}
 }
