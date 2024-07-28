@@ -176,7 +176,7 @@ func getLastMessages(w http.ResponseWriter, r *http.Request, db *database.GameDb
 		return
 	}
 
-	messages, newLastIdx := db.GetNewRecentlySentCommands(sessionId, lastMessageIdx)
+	messages, newLastIdx := db.GetNewRecentWebMessages(userId, lastMessageIdx)
 
 	w.Header().Set("Content-Type", "application/json")
 	messagesStr := ""

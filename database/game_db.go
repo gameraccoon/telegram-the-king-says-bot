@@ -72,10 +72,10 @@ func ConnectDb(path string) (database *GameDb, err error) {
 		")")
 
 	database.db.Exec("CREATE TABLE IF NOT EXISTS" +
-		" recently_sent_commands(id INTEGER NOT NULL PRIMARY KEY" +
-		",session_id INTEGER NOT NULL" +
-		",index_in_session INTEGER NOT NULL" +
-		",command TEXT NOT NULL" +
+		" recent_web_messages(id INTEGER NOT NULL PRIMARY KEY" +
+		",user_id INTEGER NOT NULL" +
+		",index_for_user INTEGER NOT NULL" +
+		",message TEXT NOT NULL" +
 		")")
 
 	database.db.Exec("CREATE UNIQUE INDEX IF NOT EXISTS" +
@@ -100,7 +100,7 @@ func ConnectDb(path string) (database *GameDb, err error) {
 		" session_id_index ON session_commands(session_id)")
 
 	database.db.Exec("CREATE INDEX IF NOT EXISTS" +
-		" session_id_index ON recently_sent_commands(session_id)")
+		" user_id_index ON recent_web_messages(user_id)")
 
 	return
 }
@@ -584,7 +584,7 @@ func (database *GameDb) LeaveSession(userId int64) (sessionId int64, wasInSessio
 	// delete session if it doesn't have Telegram users in it
 	if database.getUsersCountInSessionUnsafe(sessionId, true) == 0 {
 		database.db.Exec(fmt.Sprintf("DELETE FROM session_commands WHERE session_id=%d", sessionId))
-		database.db.Exec(fmt.Sprintf("DELETE FROM recently_sent_commands WHERE session_id=%d", sessionId))
+		database.db.Exec(fmt.Sprintf("DELETE FROM recent_web_messages WHERE user_id in (select user_id from users where current_session=%d)", sessionId))
 		database.db.Exec(fmt.Sprintf("DELETE FROM sessions WHERE id=%d", sessionId))
 		database.db.Exec(fmt.Sprintf("DELETE FROM web_users WHERE user_id IN (SELECT id FROM users WHERE current_session=%d)", sessionId))
 		// the remaining users that have this session is the web users that we just deleted
@@ -942,21 +942,21 @@ func (database *GameDb) GetWebUserId(token int64) (userId int64, isFound bool) {
 	return
 }
 
-func (database *GameDb) AddRecentlySentCommand(sessionId int64, command string, limit int) {
+func (database *GameDb) AddWebMessage(userId int64, command string, limit int) {
 	database.mutex.Lock()
 	defer database.mutex.Unlock()
 
-	database.db.Exec(fmt.Sprintf("INSERT INTO recently_sent_commands (session_id, index_in_session, command) VALUES (%d, (SELECT IFNULL(MAX(index_in_session), -1) FROM recently_sent_commands WHERE session_id=%d) + 1, '%s')", sessionId, sessionId, dbBase.SanitizeString(command)))
-	database.db.Exec(fmt.Sprintf("DELETE FROM recently_sent_commands WHERE session_id=%d AND index_in_session<=((SELECT MAX(index_in_session) FROM recently_sent_commands WHERE session_id=%d) - %d)", sessionId, sessionId, limit))
+	database.db.Exec(fmt.Sprintf("INSERT INTO recent_web_messages (user_id, index_for_user, message) VALUES (%d, (SELECT IFNULL(MAX(index_for_user), -1) FROM recent_web_messages WHERE user_id=%d) + 1, '%s')", userId, userId, dbBase.SanitizeString(command)))
+	database.db.Exec(fmt.Sprintf("DELETE FROM recent_web_messages WHERE user_id=%d AND index_for_user<=((SELECT MAX(index_for_user) FROM recent_web_messages WHERE user_id=%d) - %d)", userId, userId, limit))
 }
 
-func (database *GameDb) GetNewRecentlySentCommands(sessionId int64, lastIndex int) (commands []string, newLastIndex int) {
+func (database *GameDb) GetNewRecentWebMessages(userId int64, lastIndex int) (commands []string, newLastIndex int) {
 	database.mutex.Lock()
 	defer database.mutex.Unlock()
 
 	newLastIndex = lastIndex
 
-	rows, err := database.db.Query(fmt.Sprintf("SELECT command, index_in_session FROM recently_sent_commands WHERE session_id=%d AND index_in_session>%d", sessionId, lastIndex))
+	rows, err := database.db.Query(fmt.Sprintf("SELECT message, index_for_user FROM recent_web_messages WHERE user_id=%d AND index_for_user>%d", userId, lastIndex))
 	if err != nil {
 		log.Fatal(err.Error())
 	}

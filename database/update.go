@@ -123,5 +123,12 @@ func makeAllUpdaters() []dbUpdater {
 				db.db.Exec("DROP TABLE users_old")
 			},
 		},
+		{
+			version: "0.4",
+			updateDb: func(db *GameDb) {
+				db.db.Exec("DROP TABLE recently_sent_commands")
+			},
+		},
 	}
 }
+

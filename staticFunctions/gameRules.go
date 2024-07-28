@@ -268,13 +268,12 @@ func SendAdvancedCommand(staticData *processing.StaticProccessStructs, sessionId
 	// transmit the message to all players in the session
 	ResendSessionDialogs(sessionId, staticData)
 	for _, user := range users {
-		if !user.IsWebUser {
+		if user.IsWebUser {
+			db.AddWebMessage(user.UserId, message, 10)
+		} else {
 			staticData.Chat.SendMessage(user.ChatId, message, 0, true)
 		}
 	}
-
-	// save the message to th db so that web users can see it
-	db.AddRecentlySentCommand(sessionId, message, 10)
 
 	// increase idle counters for players who didn't participate and reset for the ones who participated
 	{

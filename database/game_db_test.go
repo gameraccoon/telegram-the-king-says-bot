@@ -513,7 +513,7 @@ func TestRemoveWebUser(t *testing.T) {
 	assert.Equal(int64(1), db.GetUsersCountInSession(sessionId, false))
 }
 
-func TestRecentlySentCommands(t *testing.T) {
+func TestWebMessages(t *testing.T) {
 	assert := require.New(t)
 	db := createDbAndConnect(t)
 	defer clearDb()
@@ -526,14 +526,22 @@ func TestRecentlySentCommands(t *testing.T) {
 	userId := db.GetOrCreateTelegramUserId(123, "", "test")
 	sessionId, _, _ := db.CreateSession(userId)
 
-	// check that there were no messages
-
-	db.AddRecentlySentCommand(sessionId, "command1", 10)
-	db.AddRecentlySentCommand(sessionId, "command2", 10)
-	db.AddRecentlySentCommand(sessionId, "command3", 10)
+	webUserToken := int64(42)
+	db.AddWebUser(sessionId, webUserToken, "name", 1)
+	webUserId, _ := db.GetWebUserId(webUserToken)
 
 	{
-		commands, newLastIndex := db.GetNewRecentlySentCommands(sessionId, -1)
+		commands, newLastIndex := db.GetNewRecentWebMessages(webUserId, -1)
+		assert.Equal(0, len(commands))
+		assert.Equal(-1, newLastIndex)
+	}
+
+	db.AddWebMessage(webUserId, "command1", 10)
+	db.AddWebMessage(webUserId, "command2", 10)
+	db.AddWebMessage(webUserId, "command3", 10)
+
+	{
+		commands, newLastIndex := db.GetNewRecentWebMessages(webUserId, -1)
 		assert.Equal(3, len(commands))
 		assert.Equal(2, newLastIndex)
 		assert.Equal("command1", commands[0])
@@ -542,7 +550,7 @@ func TestRecentlySentCommands(t *testing.T) {
 	}
 
 	{
-		commands, newLastIndex := db.GetNewRecentlySentCommands(sessionId, 0)
+		commands, newLastIndex := db.GetNewRecentWebMessages(webUserId, 0)
 		assert.Equal(2, len(commands))
 		assert.Equal(2, newLastIndex)
 		assert.Equal("command2", commands[0])
@@ -550,22 +558,22 @@ func TestRecentlySentCommands(t *testing.T) {
 	}
 
 	{
-		commands, newLastIndex := db.GetNewRecentlySentCommands(sessionId, 1)
+		commands, newLastIndex := db.GetNewRecentWebMessages(webUserId, 1)
 		assert.Equal(1, len(commands))
 		assert.Equal(2, newLastIndex)
 		assert.Equal("command3", commands[0])
 	}
 
 	{
-		commands, newLastIndex := db.GetNewRecentlySentCommands(sessionId, 2)
+		commands, newLastIndex := db.GetNewRecentWebMessages(webUserId, 2)
 		assert.Equal(0, len(commands))
 		assert.Equal(2, newLastIndex)
 	}
 
-	db.AddRecentlySentCommand(sessionId, "command4", 2)
+	db.AddWebMessage(webUserId, "command4", 2)
 
 	{
-		commands, newLastIndex := db.GetNewRecentlySentCommands(sessionId, 0)
+		commands, newLastIndex := db.GetNewRecentWebMessages(webUserId, 0)
 		assert.Equal(2, len(commands))
 		assert.Equal(3, newLastIndex)
 		assert.Equal("command3", commands[0])
@@ -575,7 +583,7 @@ func TestRecentlySentCommands(t *testing.T) {
 	db.LeaveSession(userId)
 
 	{
-		commands, newLastIndex := db.GetNewRecentlySentCommands(sessionId, 0)
+		commands, newLastIndex := db.GetNewRecentWebMessages(webUserId, 0)
 		assert.Equal(0, len(commands))
 		assert.Equal(0, newLastIndex)
 	}
