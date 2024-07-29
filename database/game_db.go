@@ -889,6 +889,7 @@ func (database *GameDb) RemoveWebUser(token int64) {
 
 	database.db.Exec(fmt.Sprintf("DELETE FROM web_users WHERE token=%d", token))
 	database.db.Exec(fmt.Sprintf("DELETE FROM users WHERE id=%d", userId))
+	database.db.Exec(fmt.Sprintf("DELETE FROM recent_web_messages WHERE user_id=%d", userId))
 }
 
 func (database *GameDb) DoesWebUserExist(token int64) (isExists bool) {

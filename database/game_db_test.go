@@ -588,3 +588,41 @@ func TestWebMessages(t *testing.T) {
 		assert.Equal(0, newLastIndex)
 	}
 }
+
+// regression test
+func TestWebMessagesClearing(t *testing.T) {
+	assert := require.New(t)
+	db := createDbAndConnect(t)
+	defer clearDb()
+	if db == nil {
+		t.Fail()
+		return
+	}
+	defer db.Disconnect()
+
+	userId := db.GetOrCreateTelegramUserId(123, "", "test")
+
+	{
+		sessionId, _, _ := db.CreateSession(userId)
+
+		webUserToken := int64(42)
+		db.AddWebUser(sessionId, webUserToken, "name", 1)
+		webUserId, _ := db.GetWebUserId(webUserToken)
+
+		db.AddWebMessage(webUserId, "command1", 10)
+
+		db.RemoveWebUser(webUserToken)
+	}
+
+	{
+		sessionId, _, _ := db.CreateSession(userId)
+
+		webUserToken := int64(63)
+		db.AddWebUser(sessionId, webUserToken, "name", 1)
+		webUserId, _ := db.GetWebUserId(webUserToken)
+
+		commands, newLastIndex := db.GetNewRecentWebMessages(webUserId, -1)
+		assert.Equal(0, len(commands))
+		assert.Equal(-1, newLastIndex)
+	}
+}
