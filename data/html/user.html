@@ -43,7 +43,7 @@ function requestUpdateContent() {
             var numMessages = response.messages.length;
 
             if (response.lastMessageIdx - lastMessageIdx > numMessages) {
-                $('#messages').append('<p style="color: gray;">' + (response.lastMessageIdx - lastMessageIdx - numMessages) + ' old commands were not received</p>');
+                $('#messages').append('<p style="color: gray;">' + (response.lastMessageIdx - lastMessageIdx - numMessages) + ' old messages were not received</p>');
             }
 
             var newMessagesCount = response.lastMessageIdx - lastMessageIdx
@@ -62,7 +62,7 @@ function requestUpdateContent() {
                 $('#last-commands').show();
             }
 
-            $('#suggestions_count').html('' + response.suggestions + ' commands in the queue');
+            $('#suggestions_count').html('' + response.suggestions + ' dare(s) in the queue');
             if (response.suggestions > 0) {
                 $('#reveal-suggestion-button').prop('disabled', false);
             } else {
@@ -168,12 +168,12 @@ $(document).ready(function() {
 </head>
 <body>
 <div id="last-commands" style="display: none;">
-    <p>Last king's commands:</p>
+    <p>Previous messages:</p>
     <div id="messages" style="height: 200px; border: 1px solid black; overflow-y: scroll;"></div>
 </div>
 <span id="players_count"></span>
 <div>
-    <p><button id="add-command-show-button">Add king's command</button></p>
+    <p><button id="add-command-show-button">Add a dare</button></p>
         <div id="add-command" style="display: none; text-align: -moz-center;">
             <p><button style="font-size: 12px;" id="show-examples-button">Show examples</button></p>
             <div id="examples" style="display: none; text-align: left; font-size: 12px; width: fit-content; margin: 0 auto; padding: 10px; border: 1px solid black;">
@@ -190,12 +190,12 @@ $(document).ready(function() {
                 <button onclick="addToTextareaAtCursorPos($('#command'), '👒');">👒</button> - Random girl<br/>
                 <button onclick="addToTextareaAtCursorPos($('#command'), '💙');">💙</button><button onclick="addToTextareaAtCursorPos($('#command'), '❤️');">❤️</button> - Two random players of opposite gender
             </div>
-            <p><textarea id="command" placeholder="Enter a command" autocomplete="off" rows="4" cols="50" style="max-width: -moz-available;"></textarea></p>
+            <p><textarea id="command" placeholder="Enter a dare" autocomplete="off" rows="4" cols="50" style="max-width: -moz-available;"></textarea></p>
             <p><button id="add-command-button">Add to the queue</button>
             <button id="add-command-hide-button">Cancel</button></p>
         </div>
     <p>
-        <button id="reveal-suggestion-button">Reveal a random command</button><br/>
+        <button id="reveal-suggestion-button">Reveal a random dare</button><br/>
         <span id="suggestions_count"></span>
     </p>
     <p><button id="leave-game-button">Leave the game</button></p>
