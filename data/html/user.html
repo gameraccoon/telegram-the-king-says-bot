@@ -22,6 +22,7 @@
 <script>
 var playerToken = "";
 var lastMessageIdx = -1;
+var lastCommandText = "";
 
 function addToTextareaAtCursorPos(textarea, text) {
     var cursorPos = textarea.prop('selectionStart');
@@ -46,11 +47,21 @@ function requestUpdateContent() {
                 $('#messages').append('<p style="color: gray;">' + (response.lastMessageIdx - lastMessageIdx - numMessages) + ' old messages were not received</p>');
             }
 
-            var newMessagesCount = response.lastMessageIdx - lastMessageIdx
-            var newMessages = response.messages.slice(-newMessagesCount);
-            newMessages.forEach(function(message) {
-                $('#messages').append('<p>' + message + '</p>');
-            });
+            var newMessagesCount = response.lastMessageIdx - lastMessageIdx;
+
+            if (newMessagesCount > 0) {
+                if (lastCommandText !== "") {
+                    $('#messages').append('<p>' + lastCommandText + '</p>');
+                }
+                lastCommandText = response.messages[numMessages - 1];
+                $('#last-command-text').html('<p>' + lastCommandText + '</p>');
+                var newMessages = response.messages.slice(-newMessagesCount, -1);
+                newMessages.forEach(function(message) {
+                    $('#messages').append('<p>' + message + '</p>');
+                });
+
+                $('#last-command').show();
+            }
 
             lastMessageIdx = response.lastMessageIdx;
 
@@ -58,8 +69,8 @@ function requestUpdateContent() {
                 $('#messages').scrollTop($('#messages')[0].scrollHeight);
             }
 
-            if (lastMessageIdx >= 0) {
-                $('#last-commands').show();
+            if (lastMessageIdx > 0) {
+                $('#history-controls').show();
             }
 
             $('#suggestions_count').html('' + response.suggestions + ' dare(s) in the queue');
@@ -160,17 +171,34 @@ $(document).ready(function() {
     });
 
     $('#show-examples-button').click(function() {
-        $('#examples').toggle();
+        $('#examples').show();
         $('#show-examples-button').hide();
+    });
+
+    $('#show-history-button').click(function() {
+        $('#prev-commands').show();
+        $('#show-history-button').hide();
+        $('#hide-history-button').show();
+    });
+
+    $('#hide-history-button').click(function() {
+        $('#prev-commands').hide();
+        $('#show-history-button').show();
+        $('#hide-history-button').hide();
     });
 });
 </script>
 </head>
 <body>
-<div id="last-commands" style="display: none;">
+<div id="history-controls" style="display: none">
+    <p><button id="show-history-button">Show history</button></p>
+    <p><button id="hide-history-button" style="display: none">Hide history</button></p>
+</div>
+<div id="prev-commands" style="display: none;">
     <p>Previous messages:</p>
     <div id="messages" style="height: 200px; border: 1px solid black; overflow-y: scroll;"></div>
 </div>
+<div id="last-command" style="display: none"><p>The king says:</p><p id="last-command-text"></p></div>
 <span id="players_count"></span>
 <div>
     <p><button id="add-command-show-button">Add a dare</button></p>
