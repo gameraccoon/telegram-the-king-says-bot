@@ -182,19 +182,19 @@ func getLastMessages(w http.ResponseWriter, r *http.Request, db *database.GameDb
 	messagesStr := ""
 	for i, message := range messages {
 		if i > 0 {
-			messagesStr += "\",\""
+			messagesStr += ","
 		}
 
 		sanitizedString := strings.Replace(message, "\n", " ", -1)
 		sanitizedString = strings.Replace(sanitizedString, "\"", "\\\"", -1)
-		messagesStr += sanitizedString
+		messagesStr += "\"" + sanitizedString + "\""
 	}
 
 	suggestedCount := db.GetSessionSuggestedCommandCount(sessionId)
 
 	playersCount := db.GetUsersCountInSession(sessionId, false)
 
-	_, err = w.Write([]byte("{\"lastMessageIdx\":" + strconv.Itoa(newLastIdx) + ",\"players\":" + strconv.FormatInt(playersCount, 10) + ",\"suggestions\":" + strconv.FormatInt(suggestedCount, 10) + ",\"messages\":[\"" + messagesStr + "\"]}"))
+	_, err = w.Write([]byte("{\"lastMessageIdx\":" + strconv.Itoa(newLastIdx) + ",\"players\":" + strconv.FormatInt(playersCount, 10) + ",\"suggestions\":" + strconv.FormatInt(suggestedCount, 10) + ",\"messages\":[" + messagesStr + "]}"))
 }
 
 func suggestCommand(w http.ResponseWriter, r *http.Request, db *database.GameDb, staticData *processing.StaticProccessStructs) {
