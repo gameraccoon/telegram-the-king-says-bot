@@ -46,7 +46,7 @@ func settingsCommand(data *processing.ProcessData) {
 func sendNumbersToPlayers(data *processing.ProcessData) {
 	sessionId, isInSession := staticFunctions.GetDb(data.Static).GetUserSession(data.UserId)
 	if isInSession {
-		staticFunctions.GiveRandomNumbersToPlayers(data, sessionId)
+		staticFunctions.GiveRandomNumbersToPlayers(data.Static, sessionId)
 	} else {
 		data.SendMessage(data.Trans("no_session_error"), true)
 	}

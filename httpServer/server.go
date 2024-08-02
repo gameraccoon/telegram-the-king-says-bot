@@ -346,6 +346,50 @@ func leaveGame(w http.ResponseWriter, r *http.Request, db *database.GameDb, stat
 	}
 }
 
+func sendNumbers(w http.ResponseWriter, r *http.Request, db *database.GameDb, staticData *processing.StaticProccessStructs) {
+	if r.Method != "POST" {
+		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+		return
+	}
+
+	err := r.ParseForm()
+	if err != nil {
+		http.Error(w, "Can't parse form", http.StatusBadRequest)
+		return
+	}
+
+	playerTokenStr := r.Form.Get("playerToken")
+	if playerTokenStr == "" {
+		http.Error(w, "Incorrect player token", http.StatusBadRequest)
+		return
+	}
+
+	playerToken, err := strconv.ParseInt(playerTokenStr, 10, 64)
+	if err != nil {
+		http.Error(w, "Incorrect player token", http.StatusBadRequest)
+		return
+	}
+
+	userId, isFound := db.GetWebUserId(playerToken)
+	if !isFound {
+		http.Error(w, "Player not found, has the game ended?", http.StatusNotFound)
+		return
+	}
+
+	sessionId, isInSession := db.GetUserSession(userId)
+	if !isInSession {
+		http.Error(w, "Player not in session, has the game ended?", http.StatusNotFound)
+		return
+	}
+
+	staticFunctions.GiveRandomNumbersToPlayers(staticData, sessionId)
+
+	_, err = w.Write([]byte("ok"))
+	if err != nil {
+		return
+	}
+}
+
 func HandleHttpRequests(port int, staticData *processing.StaticProccessStructs) {
 	db := staticFunctions.GetDb(staticData)
 
@@ -370,6 +414,9 @@ func HandleHttpRequests(port int, staticData *processing.StaticProccessStructs) 
 	})
 	http.HandleFunc("/leave", func(w http.ResponseWriter, r *http.Request) {
 		leaveGame(w, r, db, staticData)
+	})
+	http.HandleFunc("/numbers", func(w http.ResponseWriter, r *http.Request) {
+		sendNumbers(w, r, db, staticData)
 	})
 
 	addr := ":" + strconv.Itoa(port)

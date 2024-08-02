@@ -10,8 +10,8 @@ import (
 	"strings"
 )
 
-func sendNumbers(data *processing.ProcessData, userIds []int64) {
-	db := GetDb(data.Static)
+func sendNumbers(staticData *processing.StaticProccessStructs, userIds []int64) {
+	db := GetDb(staticData)
 
 	maleIdx := 0
 	femaleIdx := 0
@@ -23,7 +23,7 @@ func sendNumbers(data *processing.ProcessData, userIds []int64) {
 			continue
 		}
 
-		trans := FindTransFunction(userId, data.Static)
+		trans := FindTransFunction(userId, staticData)
 
 		message := trans("player_number_msg", map[string]interface{}{
 			"Number": i + 1,
@@ -51,20 +51,20 @@ func sendNumbers(data *processing.ProcessData, userIds []int64) {
 
 		chatId, isFound := db.GetTelegramUserChatId(userId)
 		if isFound {
-			data.Static.Chat.SendMessage(chatId, message, 0, true)
+			staticData.Chat.SendMessage(chatId, message, 0, true)
 		} else {
 			db.AddWebMessage(userId, message, 10)
 		}
 	}
 }
 
-func GiveRandomNumbersToPlayers(data *processing.ProcessData, sessionId int64) {
-	db := GetDb(data.Static)
+func GiveRandomNumbersToPlayers(staticData *processing.StaticProccessStructs, sessionId int64) {
+	db := GetDb(staticData)
 	userIds := db.GetUsersInSession(sessionId)
 
 	rand.Shuffle(len(userIds), func(i, j int) { userIds[i], userIds[j] = userIds[j], userIds[i] })
 
-	sendNumbers(data, userIds)
+	sendNumbers(staticData, userIds)
 }
 
 func getPlaceholders(staticData *processing.StaticProccessStructs) *static.PlaceholderInfos {

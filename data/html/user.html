@@ -200,6 +200,21 @@ $(document).ready(function() {
         $('#show-history-button').show();
         $('#hide-history-button').hide();
     });
+
+    $('#send-numbers-button').click(function() {
+        $('#status').html('<p>Sending new numbers... please wait</p>');
+        $.ajax({
+            url: '/numbers',
+            type: 'POST',
+            ContentType: 'application/x-www-form-urlencoded',
+            data: { 'playerToken': playerToken }
+        }).done(function(response){
+            $('#status').html('<p style="color: green;">New numbers sent successfully</p>');
+            requestUpdateContent();
+        }).fail(function(jqXHR, textStatus, errorThrown){
+            showError("Failed to send new numbers", jqXHR, textStatus);
+        });
+    });
 });
 </script>
 </head>
@@ -216,28 +231,28 @@ $(document).ready(function() {
 <span id="players_count"></span>
 <div>
     <p><button id="add-command-show-button">Add a dare</button></p>
-        <div id="add-command" style="display: none; text-align: -moz-center;">
-            <p><button style="font-size: 12px;" id="show-examples-button">Show examples</button></p>
-            <div id="examples" style="display: none; text-align: left; font-size: 12px; width: fit-content; margin: 0 auto; padding: 10px; border: 1px solid black;">
-                <p>Examples:</p>
-                <p style="font-weight: bold;">🎲 says something nice to the player on his/her right</p>
-                <p style="font-weight: bold;">🎩 and 👒 exchange places</p>
-                <p style="font-weight: bold;">💙 and 💙 make compliments to ❤️</p>
-                <p>(note that it will be randomly chosen whether it will be two boys complimenting a girl or two girls complimenting a boy)</p>
-            </div>
-            <div style="font-size: 12px; text-align: left; width: fit-content; margin: 0 auto;">
-                <p>Placeholders (click to use):</p>
-                <button onclick="addToTextareaAtCursorPos($('#command'), '🎲');">🎲</button> - Random player<br/>
-                <button onclick="addToTextareaAtCursorPos($('#command'), '🎩');">🎩</button> - Random boy<br/>
-                <button onclick="addToTextareaAtCursorPos($('#command'), '👒');">👒</button> - Random girl<br/>
-                <button onclick="addToTextareaAtCursorPos($('#command'), '💙');">💙</button><button onclick="addToTextareaAtCursorPos($('#command'), '❤️');">❤️</button> - Two random players of opposite gender
-            </div>
-            <p><textarea id="command" placeholder="Enter a dare" autocomplete="off" rows="4" cols="50" style="max-width: -moz-available;"></textarea></p>
-            <p><button id="add-command-button">Add to the queue</button>
-            <button id="add-command-hide-button">Cancel</button></p>
+    <div id="add-command" style="display: none; text-align: -moz-center;">
+        <p><button style="font-size: 12px;" id="show-examples-button">Show examples</button></p>
+        <div id="examples" style="display: none; text-align: left; font-size: 12px; width: fit-content; margin: 0 auto; padding: 10px; border: 1px solid black;">
+            <p>Examples:</p>
+            <p style="font-weight: bold;">🎲 says something nice to the player on his/her right</p>
+            <p style="font-weight: bold;">🎩 and 👒 exchange places</p>
+            <p style="font-weight: bold;">💙 and 💙 make compliments to ❤️</p>
+            <p>(note that it will be randomly chosen whether it will be two boys complimenting a girl or two girls complimenting a boy)</p>
         </div>
+        <div style="font-size: 12px; text-align: left; width: fit-content; margin: 0 auto;">
+            <p>Placeholders (click to use):</p>
+            <button onclick="addToTextareaAtCursorPos($('#command'), '🎲');">🎲</button> - Random player<br/>
+            <button onclick="addToTextareaAtCursorPos($('#command'), '🎩');">🎩</button> - Random boy<br/>
+            <button onclick="addToTextareaAtCursorPos($('#command'), '👒');">👒</button> - Random girl<br/>
+            <button onclick="addToTextareaAtCursorPos($('#command'), '💙');">💙</button><button onclick="addToTextareaAtCursorPos($('#command'), '❤️');">❤️</button> - Two random players of opposite gender
+        </div>
+        <p><textarea id="command" placeholder="Enter a dare" autocomplete="off" rows="4" cols="50" style="max-width: -moz-available;"></textarea></p>
+        <p><button id="add-command-button">Add to the list</button>
+        <button id="add-command-hide-button">Cancel</button></p>
+    </div>
     <p>
-        <button id="reveal-suggestion-button">Reveal one dare</button> <button id="send-numbers-button">🎲</button><br/>
+        <button id="reveal-suggestion-button">Reveal one dare</button> <button id="send-numbers-button" title="Send random numbers">#</button><br/>
         <span id="suggestions_count"></span>
     </p>
     <p><button id="leave-game-button">Disconnect</button></p>
