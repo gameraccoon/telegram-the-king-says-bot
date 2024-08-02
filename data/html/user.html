@@ -126,7 +126,7 @@ $(document).ready(function() {
             return;
         }
 
-        $('#status').html('<p>Sending a dare... please wait</p>');
+        $('#status').html('<p>Adding a dare... please wait</p>');
         $.ajax({
             url: '/suggest',
             type: 'POST',
@@ -237,10 +237,10 @@ $(document).ready(function() {
             <button id="add-command-hide-button">Cancel</button></p>
         </div>
     <p>
-        <button id="reveal-suggestion-button">Reveal a random dare</button><br/>
+        <button id="reveal-suggestion-button">Reveal one dare</button> <button id="send-numbers-button">🎲</button><br/>
         <span id="suggestions_count"></span>
     </p>
-    <p><button id="leave-game-button">Leave the game</button></p>
+    <p><button id="leave-game-button">Disconnect</button></p>
     <div id="leave-confirmation" style="display: none;">
         <p>Are you sure you want to leave the game?</p>
         <button id="leave-yes-button">Yes</button>
