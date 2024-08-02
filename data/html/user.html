@@ -34,6 +34,18 @@ function addToTextareaAtCursorPos(textarea, text) {
     textarea.prop('selectionEnd', cursorPos + text.length);
 }
 
+function showError(message, jqXHR, textStatus) {
+    var errorMessage = jqXHR.responseText;
+    if (errorMessage === undefined) {
+        if (jqXHR.readyState === 0) {
+            errorMessage = "Network issue, check your connection";
+        } else {
+            errorMessage = "Code " + jqXHR.status;
+        }
+    }
+    $('#status').html('<p style="color: red;">' + message + '<br/>Error: ' + errorMessage + '</p>');
+}
+
 function requestUpdateContent() {
     $.ajax({
         url: '/messages',
@@ -114,7 +126,7 @@ $(document).ready(function() {
             return;
         }
 
-        $('#status').html('');
+        $('#status').html('<p>Sending a dare... please wait</p>');
         $.ajax({
             url: '/suggest',
             type: 'POST',
@@ -125,25 +137,26 @@ $(document).ready(function() {
             $('#add-command').hide();
             $('#add-command-show-button').show();
 
-            $('#status').html('<p style="color: green;">Command sent successfully</p>');
+            $('#status').html('<p style="color: green;">The dare added successfully</p>');
 
             requestUpdateContent();
         }).fail(function(jqXHR, textStatus, errorThrown){
-            $('#status').html('<p style="color: red;">Failed to send command<br/>Error: ' + jqXHR.responseText + '</p>');
+            showError("Failed to add dare", jqXHR, textStatus);
         });
     });
 
     $('#reveal-suggestion-button').click(function() {
+        $('#status').html('<p>Revealing a dare... please wait</p>');
         $.ajax({
             url: '/reveal',
             type: 'POST',
             ContentType: 'application/x-www-form-urlencoded',
             data: { 'playerToken': playerToken }
         }).done(function(response){
-            $('#status').html('<p style="color: green;">Suggested command sent successfully</p>');
+            $('#status').html('<p style="color: green;">A dare revealed successfully</p>');
             requestUpdateContent();
         }).fail(function(jqXHR, textStatus, errorThrown){
-            $('#status').html('<p style="color: red;">Failed to send suggested command<br/>Error: ' + jqXHR.responseText + '</p>');
+            showError("Failed to reveal a dare", jqXHR, textStatus);
         });
     });
 
@@ -153,6 +166,7 @@ $(document).ready(function() {
     });
 
     $('#leave-yes-button').click(function() {
+        $('#status').html('<p>Leaving... please wait</p>');
         $.ajax({
             url: '/leave',
             type: 'POST',
@@ -161,7 +175,7 @@ $(document).ready(function() {
         }).done(function(response){
             window.location.href = '/';
         }).fail(function(jqXHR, textStatus, errorThrown){
-            $('#status').html('<p style="color: red;">Failed to leave the game<br/>Error: ' + jqXHR.responseText + '</p>');
+            showError("Failed to leave the game", jqXHR, textStatus);
         });
     });
 
