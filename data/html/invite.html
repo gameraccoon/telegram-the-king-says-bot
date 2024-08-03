@@ -35,6 +35,18 @@ button {
 </style>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 <script>
+function showError(message, jqXHR, textStatus) {
+    var errorMessage = jqXHR.responseText;
+    if (errorMessage === undefined) {
+        if (jqXHR.readyState === 0) {
+            errorMessage = "Network issue, check your connection";
+        } else {
+            errorMessage = "Code " + jqXHR.status;
+        }
+    }
+    $('#status').html('<p style="color: red;">' + message + '<br/>Error: ' + errorMessage + '</p>');
+}
+
 $(document).ready(function() {
     var gameId = window.location.pathname.split('/').pop();
 
@@ -56,11 +68,12 @@ $(document).ready(function() {
             return;
         }
 
+        $('#status').html('<p>Joining... please wait</p>');
         $.post('/join', { gameId: gameId, name: name, gender: gender }, function(data) {
+            $('#status').html('<p>Redirecting to the game... please wait</p>');
             window.location.href = '/user/' + data;
-        })
-        .fail(function(error) {
-            alert('Failed to join the game.\nError: ' + error.responseText);
+        }).fail(function(jqXHR, textStatus, errorThrown){
+            showError("Failed to join the game", jqXHR, textStatus);
         });
     });
 });
@@ -85,5 +98,6 @@ $(document).ready(function() {
     <br/><br/>
     <button id="join">Join</button>
 </div>
+<div id="status"></div>
 </body>
 </html>
