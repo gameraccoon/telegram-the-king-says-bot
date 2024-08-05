@@ -59,7 +59,7 @@ func servePreloaded(w http.ResponseWriter, page *string) {
 	}
 }
 
-func homePage(w http.ResponseWriter, r *http.Request, caches *webCaches) {
+func homePage(w http.ResponseWriter, caches *webCaches) {
 	servePreloaded(w, &caches.indexHtml)
 }
 
@@ -446,8 +446,8 @@ func HandleHttpRequests(port int, staticData *processing.StaticProccessStructs) 
 		return
 	}
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		homePage(w, r, &caches)
+	http.HandleFunc("/", func(w http.ResponseWriter, _r *http.Request) {
+		homePage(w, &caches)
 	})
 	http.HandleFunc("/invite/", func(w http.ResponseWriter, r *http.Request) {
 		invitePage(w, r, db, &caches)
