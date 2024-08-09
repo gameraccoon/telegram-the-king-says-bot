@@ -8,15 +8,70 @@
 <meta http-equiv="Expires" content="0" />
 <title>The King Says</title>
 <style>
-    body {
-        font-family: Arial, sans-serif;
-        text-align: center;
-        margin: 20px;
-    }
-    span {
-        font-size: 12px;
-        color: gray;
-    }
+body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    margin: 20px;
+    background-color: #333;
+    color: #ddd;
+}
+a {
+    display: inline-block;
+    padding: 5px 10px;
+    background-color: #0088cc;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+}
+a:hover {
+    background-color: #005580;
+}
+button {
+    padding: 5px 10px;
+    background-color: #0088cc;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+button:disabled {
+    background-color: #444;
+    color: #888;
+}
+span {
+    font-size: 12px;
+    color: gray;
+}
+td {
+    padding: 8px 2px;
+    text-align: left;
+    vertical-align: top;
+}
+table {
+    margin-left: auto;
+    margin-right: auto;
+}
+textarea {
+    max-width: -moz-available;
+    background-color: #222;
+    color: #ddd;
+    border: 1px solid #444;
+    border-radius: 5px;
+    padding: 5px;
+}
+.messages {
+    background-color: #222;
+    padding: 1px;
+}
+.success {
+    color: #8C0;
+}
+.error {
+    color: #C40;
+}
+.new {
+    color: lawngreen;
+}
 </style>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 <script>
@@ -43,7 +98,7 @@ function showError(message, jqXHR, textStatus) {
             errorMessage = "Code " + jqXHR.status;
         }
     }
-    $('#status').html('<p style="color: red;">' + message + '<br/>Error: ' + errorMessage + '</p>');
+    $('#status').html('<p class="error">' + message + '<br/>Error: ' + errorMessage + '</p>');
 }
 
 function requestUpdateContent() {
@@ -56,20 +111,20 @@ function requestUpdateContent() {
             var numMessages = response.messages.length;
 
             if (response.lastMessageIdx - lastMessageIdx > numMessages) {
-                $('#messages').append('<p style="color: gray;">' + (response.lastMessageIdx - lastMessageIdx - numMessages) + ' old messages were not received</p>');
+                $('#old-messages').append('<p style="color: gray;">' + (response.lastMessageIdx - lastMessageIdx - numMessages) + ' old messages were not received</p>');
             }
 
             var newMessagesCount = response.lastMessageIdx - lastMessageIdx;
 
             if (newMessagesCount > 0) {
                 if (lastCommandText !== "") {
-                    $('#messages').append('<p>' + lastCommandText + '</p>');
+                    $('#old-messages').append('<p>' + lastCommandText + '</p>');
                 }
                 lastCommandText = response.messages[numMessages - 1];
                 $('#last-command-text').html('<p>' + lastCommandText + '</p>');
                 var newMessages = response.messages.slice(-newMessagesCount, -1);
                 newMessages.forEach(function(message) {
-                    $('#messages').append('<p>' + message + '</p>');
+                    $('#old-messages').append('<p>' + message + '</p>');
                 });
 
                 $('#last-command').show();
@@ -78,7 +133,7 @@ function requestUpdateContent() {
             lastMessageIdx = response.lastMessageIdx;
 
             if (newMessagesCount > 0) {
-                $('#messages').scrollTop($('#messages')[0].scrollHeight);
+                $('#old-messages').scrollTop($('#old-messages')[0].scrollHeight);
             }
 
             if (lastMessageIdx > 0) {
@@ -122,7 +177,7 @@ $(document).ready(function() {
         var command = $('#command').val();
 
         if (command === '') {
-            $('#status').html('<p style="color: red;">Dare can not be empty</p>');
+            $('#status').html('<p class="error">Dare can not be empty</p>');
             return;
         }
 
@@ -137,7 +192,7 @@ $(document).ready(function() {
             $('#add-command').hide();
             $('#add-command-show-button').show();
 
-            $('#status').html('<p style="color: green;">The dare added successfully</p>');
+            $('#status').html('<p class="success">The dare added successfully</p>');
 
             requestUpdateContent();
         }).fail(function(jqXHR, textStatus, errorThrown){
@@ -153,7 +208,7 @@ $(document).ready(function() {
             ContentType: 'application/x-www-form-urlencoded',
             data: { 'playerToken': playerToken }
         }).done(function(response){
-            $('#status').html('<p style="color: green;">A dare revealed successfully</p>');
+            $('#status').html('<p class="success">A dare revealed successfully</p>');
             requestUpdateContent();
         }).fail(function(jqXHR, textStatus, errorThrown){
             showError("Failed to reveal a dare", jqXHR, textStatus);
@@ -210,7 +265,7 @@ $(document).ready(function() {
             ContentType: 'application/x-www-form-urlencoded',
             data: { 'playerToken': playerToken }
         }).done(function(response){
-            $('#status').html('<p style="color: green;">New numbers sent successfully</p>');
+            $('#status').html('<p class="success">New numbers sent successfully</p>');
             requestUpdateContent();
         }).fail(function(jqXHR, textStatus, errorThrown){
             showError("Failed to send new numbers", jqXHR, textStatus);
@@ -226,9 +281,9 @@ $(document).ready(function() {
 </div>
 <div id="prev-commands" style="display: none;">
     <p>Previous messages:</p>
-    <div id="messages" style="height: 200px; border: 1px solid black; overflow-y: scroll;"></div>
+    <div id="old-messages" style="height: 200px; overflow-y: scroll;" class="messages"></div>
 </div>
-<div id="last-command" style="display: none"><p>The king says:</p><p id="last-command-text" style="border: 1px solid black"></p></div>
+<div id="last-command" style="display: none"><p>The king says:</p><p id="last-command-text" class="messages"></p></div>
 <span id="players_count"></span>
 <div>
     <p><button id="add-command-show-button">Add a dare</button></p>
