@@ -59,6 +59,13 @@ func shareLink(sessionId int64, data *processing.ProcessData) bool {
 	db := staticFunctions.GetDb(data.Static)
 	staticData := data.Static
 
+	currentSessionId, isInSession := db.GetUserSession(data.UserId)
+
+	if !isInSession || sessionId != currentSessionId {
+		data.SendMessage(data.Trans("session_is_too_old"), true)
+		return true
+	}
+
 	sessionToken, isFound := db.GetTokenFromSessionId(sessionId)
 
 	if !isFound {
