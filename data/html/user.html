@@ -72,6 +72,14 @@ textarea {
 .new {
     color: lawngreen;
 }
+.emoji {
+    color: #fff;
+    text-shadow:
+        1px 1px 1px #fff,
+        -1px 1px 1px #fff,
+        -1px -1px 1px #fff,
+        1px -1px 1px #fff;
+}
 </style>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 <script>
@@ -275,6 +283,7 @@ $(document).ready(function() {
 </script>
 </head>
 <body>
+<span id="players_count"></span>
 <div id="history-controls" style="display: none">
     <p><button id="show-history-button">Show history</button></p>
     <p><button id="hide-history-button" style="display: none">Hide history</button></p>
@@ -284,7 +293,6 @@ $(document).ready(function() {
     <div id="old-messages" style="height: 200px; overflow-y: scroll;" class="messages"></div>
 </div>
 <div id="last-command" style="display: none"><p>The king says:</p><p id="last-command-text" class="messages"></p></div>
-<span id="players_count"></span>
 <div>
     <p><button id="add-command-show-button">Add a dare</button></p>
     <div id="add-command" style="display: none; text-align: -moz-center;">
@@ -298,11 +306,12 @@ $(document).ready(function() {
         </div>
         <div style="font-size: 12px; text-align: left; width: fit-content; margin: 0 auto;">
             <p>Placeholders (click to use):</p>
-            <button onclick="addToTextareaAtCursorPos($('#command'), '🎲');">🎲</button> - Random player<br/>
-            <button onclick="addToTextareaAtCursorPos($('#command'), '🎩');">🎩</button> - Random boy<br/>
-            <button onclick="addToTextareaAtCursorPos($('#command'), '👒');">👒</button> - Random girl<br/>
-            <button onclick="addToTextareaAtCursorPos($('#command'), '💙');">💙</button><button onclick="addToTextareaAtCursorPos($('#command'), '❤️');">❤️</button> - Two random players of opposite gender
+            <button onclick="addToTextareaAtCursorPos($('#command'), '🎲');" class="emoji">🎲</font></button> - Random player<br/>
+            <button onclick="addToTextareaAtCursorPos($('#command'), '🎩');" class="emoji">🎩</button> - Random boy<br/>
+            <button onclick="addToTextareaAtCursorPos($('#command'), '👒');" class="emoji">👒</button> - Random girl<br/>
+            <button onclick="addToTextareaAtCursorPos($('#command'), '💙');" class="emoji">💙</button><button onclick="addToTextareaAtCursorPos($('#command'), '❤️');" class="emoji">❤️</button> - Two random players of opposite gender*
         </div>
+        <span style="text-align: left">* Randomized whether a specific color represents girls or boys</span>
         <p><textarea id="command" placeholder="Enter a dare" autocomplete="off" rows="4" cols="50" style="max-width: -moz-available;"></textarea></p>
         <p><button id="add-command-button">Add to the list</button>
         <button id="add-command-hide-button">Cancel</button></p>
