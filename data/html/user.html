@@ -13,22 +13,11 @@ body {
     text-align: center;
     margin: 20px;
     background-color: #333;
-    color: #ddd;
-}
-a {
-    display: inline-block;
-    padding: 5px 10px;
-    background-color: #0088cc;
-    color: white;
-    text-decoration: none;
-    border-radius: 5px;
-}
-a:hover {
-    background-color: #005580;
+    color: #fff;
 }
 button {
     padding: 5px 10px;
-    background-color: #0088cc;
+    background-color: #007AB8;
     color: white;
     border: none;
     border-radius: 5px;
@@ -62,15 +51,13 @@ textarea {
 .messages {
     background-color: #222;
     padding: 1px;
+    border-radius: 5px;
 }
-.success {
-    color: #8C0;
+.info {
+    color: #6c94bc;
 }
 .error {
-    color: #C40;
-}
-.new {
-    color: lawngreen;
+    color: #C1292E;
 }
 .emoji {
     color: #fff;
@@ -189,7 +176,7 @@ $(document).ready(function() {
             return;
         }
 
-        $('#status').html('<p>Adding a dare... please wait</p>');
+        $('#status').html('<p class="info">Adding a dare... please wait</p>');
         $.ajax({
             url: '/suggest',
             type: 'POST',
@@ -200,7 +187,7 @@ $(document).ready(function() {
             $('#add-command').hide();
             $('#add-command-show-button').show();
 
-            $('#status').html('<p class="success">The dare added successfully</p>');
+            $('#status').html('<p class="info">The dare added successfully</p>');
 
             requestUpdateContent();
         }).fail(function(jqXHR, textStatus, errorThrown){
@@ -209,14 +196,14 @@ $(document).ready(function() {
     });
 
     $('#reveal-suggestion-button').click(function() {
-        $('#status').html('<p>Revealing a dare... please wait</p>');
+        $('#status').html('<p class="info">Revealing a dare... please wait</p>');
         $.ajax({
             url: '/reveal',
             type: 'POST',
             ContentType: 'application/x-www-form-urlencoded',
             data: { 'playerToken': playerToken }
         }).done(function(response){
-            $('#status').html('<p class="success">A dare revealed successfully</p>');
+            $('#status').html('<p class="info">A dare revealed successfully</p>');
             requestUpdateContent();
         }).fail(function(jqXHR, textStatus, errorThrown){
             showError("Failed to reveal a dare", jqXHR, textStatus);
@@ -229,14 +216,14 @@ $(document).ready(function() {
     });
 
     $('#leave-yes-button').click(function() {
-        $('#status').html('<p>Leaving... please wait</p>');
+        $('#status').html('<p class="info">Leaving... please wait</p>');
         $.ajax({
             url: '/leave',
             type: 'POST',
             ContentType: 'application/x-www-form-urlencoded',
             data: { 'playerToken': playerToken }
         }).done(function(response){
-        $('#status').html('<p>Redirecting...</p>');
+        $('#status').html('<p class="info">Redirecting...</p>');
             window.location.href = '/';
         }).fail(function(jqXHR, textStatus, errorThrown){
             showError("Failed to leave the game", jqXHR, textStatus);
@@ -266,14 +253,14 @@ $(document).ready(function() {
     });
 
     $('#send-numbers-button').click(function() {
-        $('#status').html('<p>Sending new numbers... please wait</p>');
+        $('#status').html('<p class="info">Sending new numbers... please wait</p>');
         $.ajax({
             url: '/numbers',
             type: 'POST',
             ContentType: 'application/x-www-form-urlencoded',
             data: { 'playerToken': playerToken }
         }).done(function(response){
-            $('#status').html('<p class="success">New numbers sent successfully</p>');
+            $('#status').html('<p class="info">New numbers sent successfully</p>');
             requestUpdateContent();
         }).fail(function(jqXHR, textStatus, errorThrown){
             showError("Failed to send new numbers", jqXHR, textStatus);
