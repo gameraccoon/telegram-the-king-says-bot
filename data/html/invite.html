@@ -60,20 +60,56 @@ function showError(message, jqXHR, textStatus) {
     $('#status').html('<p class="error">' + message + '<br/>Error: ' + errorMessage + '</p>');
 }
 
+function getCookieValue(cname) {
+    let name = cname + "=";
+    let decodedCookie = decodeURIComponent(document.cookie);
+    let ca = decodedCookie.split(';');
+    for(let i = 0; i <ca.length; i++) {
+        let c = ca[i];
+        while (c.charAt(0) == ' ') {
+            c = c.substring(1);
+        }
+        if (c.indexOf(name) == 0) {
+            return c.substring(name.length, c.length);
+        }
+    }
+    return "";
+}
+
+function createNewUser() {
+    $('#options').show();
+    $('#show-options').hide();
+    $('#rejoin').hide();
+    $('#name').focus();
+}
+
+function reJoin(token) {
+    $('#status').html('<p class="info">Redirecting to the game... please wait</p>');
+    window.location.href = '/user/' + token;
+}
+
 $(document).ready(function() {
+    var playerToken = "";
     var gameId = window.location.pathname.split('/').pop();
 
     $('#show-options').click(function() {
-        $('#options').show();
-        $('#show-options').hide();
-        $('#name').focus();
+        playerToken = getCookieValue("last_session");
+        if (playerToken == "")
+        {
+            createNewUser();
+        }
+        else
+        {
+            $('#show-options').hide();
+            $('#rejoin').show();
+        }
     });
 
     $('#open-in-telegram').click(function() {
         window.location.href = 'https://telegram.me/TheKingSaysBot?start=' + gameId;
     });
 
-    $('#join').click(function() {
+    $('#join-btn').click(function() {
         var name = $('#name').val();
         var gender = $('#gender').val();
 
@@ -90,6 +126,14 @@ $(document).ready(function() {
             showError("Failed to join the game", jqXHR, textStatus);
         });
     });
+
+    $('#rejoin-btn').click(function() {
+        reJoin(playerToken);
+    });
+
+    $('#join-new-btn').click(function() {
+        createNewUser()
+    });
 });
 </script>
 </head>
@@ -98,7 +142,11 @@ $(document).ready(function() {
     <button id="open-in-telegram">Continue in Telegram</button>
     <p>or</p>
     <button id="show-options">Join from web</button>
-
+<div id="rejoin" style="display: none;">
+<p>You've previously been in a session</p>
+<p><button id="rejoin-btn">Re-join</button></p>
+<p><button id="join-new-btn">Join this session as a new user</button></p>
+</div>
 <div id="options" style="display: none;">
     <p>Choose your name</p>
     <input type="text" id="name" placeholder="Your name" maxlength="20">
@@ -110,7 +158,7 @@ $(document).ready(function() {
         <option value="n">None</option>
     </select>
     <br/><br/>
-    <button id="join">Join</button>
+    <button id="join-btn">Create user</button>
 </div>
 <div id="status"></div>
 </body>
