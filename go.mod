@@ -3,7 +3,7 @@ module github.com/gameraccoon/telegram-the-king-says-bot
 go 1.18
 
 require (
-	github.com/gameraccoon/telegram-bot-skeleton v0.0.6
+	github.com/gameraccoon/telegram-bot-skeleton v0.0.8
 	github.com/go-telegram-bot-api/telegram-bot-api v4.6.4+incompatible
 	github.com/iohub/ahocorasick v0.0.0-20240118134817-7d0e3abf6181
 	github.com/mattn/go-sqlite3 v1.14.22

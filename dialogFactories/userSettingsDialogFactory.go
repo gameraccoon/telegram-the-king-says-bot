@@ -52,7 +52,7 @@ func MakeUserSettingsDialogFactory() dialogFactory.DialogFactory {
 }
 
 func changeName(userId int64, data *processing.ProcessData) bool {
-	data.SubstitudeMessage(data.Trans("enter_name"))
+	data.SubstituteMessage(data.Trans("enter_name"))
 	data.Static.SetUserStateTextProcessor(userId, &processing.AwaitingTextProcessorData{
 		ProcessorId:  "changeName",
 		AdditionalId: userId,
@@ -61,12 +61,12 @@ func changeName(userId int64, data *processing.ProcessData) bool {
 }
 
 func changeLanguage(userId int64, data *processing.ProcessData) bool {
-	data.SubstitudeDialog(data.Static.MakeDialogFn("lc", data.UserId, data.Trans, data.Static, nil))
+	data.SubstituteDialog(data.Static.MakeDialogFn("lc", data.UserId, data.Trans, data.Static, nil))
 	return true
 }
 
 func changeGender(userId int64, data *processing.ProcessData) bool {
-	data.SubstitudeDialog(data.Static.MakeDialogFn("gc", data.UserId, data.Trans, data.Static, nil))
+	data.SubstituteDialog(data.Static.MakeDialogFn("gc", data.UserId, data.Trans, data.Static, nil))
 	return true
 }
 

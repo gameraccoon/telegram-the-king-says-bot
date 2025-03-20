@@ -54,28 +54,28 @@ func MakeGenderSelectDialogFactory() dialogFactory.DialogFactory {
 func selectGenderFemale(sessionId int64, data *processing.ProcessData) bool {
 	db := staticFunctions.GetDb(data.Static)
 	db.SetUserGender(data.UserId, 1)
-	data.SubstitudeMessage(data.Trans("gender_changed"))
+	data.SubstituteMessage(data.Trans("gender_changed"))
 	return true
 }
 
 func selectGenderMale(sessionId int64, data *processing.ProcessData) bool {
 	db := staticFunctions.GetDb(data.Static)
 	db.SetUserGender(data.UserId, 2)
-	data.SubstitudeMessage(data.Trans("gender_changed"))
+	data.SubstituteMessage(data.Trans("gender_changed"))
 	return true
 }
 
 func selectGenderBoth(sessionId int64, data *processing.ProcessData) bool {
 	db := staticFunctions.GetDb(data.Static)
 	db.SetUserGender(data.UserId, 3)
-	data.SubstitudeMessage(data.Trans("gender_changed"))
+	data.SubstituteMessage(data.Trans("gender_changed"))
 	return true
 }
 
 func selectGenderNone(sessionId int64, data *processing.ProcessData) bool {
 	db := staticFunctions.GetDb(data.Static)
 	db.SetUserGender(data.UserId, 0)
-	data.SubstitudeMessage(data.Trans("gender_changed"))
+	data.SubstituteMessage(data.Trans("gender_changed"))
 	return true
 }
 
