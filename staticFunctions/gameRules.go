@@ -131,10 +131,6 @@ func appendOppositeMatches(matches *[]placeholderMatch, sequence []byte, placeho
 
 func appendRepeatedPositionMatches(matches *[]placeholderMatch, sequence []byte, placeholder *[10]static.PlaceholderInfo) {
 	for placeholderIdx := range placeholder {
-		if placeholderIdx >= len(*matches) {
-			break
-		}
-
 		resp := placeholder[placeholderIdx].Matcher.Match(sequence)
 
 		for resp.HasNext() {
