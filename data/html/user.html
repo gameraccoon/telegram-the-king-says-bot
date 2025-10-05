@@ -299,6 +299,7 @@ $(document).ready(function() {
             <p style="font-weight: bold;">🎲 says something nice to the player on his/her right</p>
             <p style="font-weight: bold;">🎩 and 👒 exchange places</p>
             <p style="font-weight: bold;">💙 and 💙 make compliments to ❤️</p>
+            <p style="font-weight: bold;">🎲 tickles 🎲 while 2️⃣ counts to 20</p>
             <p>(note that it will be randomly chosen whether it will be two boys complimenting a girl or two girls complimenting a boy)</p>
         </div>
         <div style="font-size: 12px; text-align: left; width: fit-content; margin: 0 auto;">
@@ -307,10 +308,10 @@ $(document).ready(function() {
             <button onclick="addToTextareaAtCursorPos($('#command'), '🎩');" class="emoji">🎩</button> - Random boy<br/>
             <button onclick="addToTextareaAtCursorPos($('#command'), '👒');" class="emoji">👒</button> - Random girl<br/>
             <button onclick="addToTextareaAtCursorPos($('#command'), '💙');" class="emoji">💙</button><button onclick="addToTextareaAtCursorPos($('#command'), '❤️');" class="emoji">❤️</button> - Two random players of opposite roles*<br/>
-            <button onclick="addToTextareaAtCursorPos($('#command'), '1️⃣');" class="emoji">1️⃣</button><button onclick="addToTextareaAtCursorPos($('#command'), '2️⃣');" class="emoji">2️⃣</button><button onclick="addToTextareaAtCursorPos($('#command'), '3️⃣');" class="emoji">3️⃣</button> - Repeating player at certain position from another placeholder**
+            <button onclick="addToTextareaAtCursorPos($('#command'), '1️⃣');" class="emoji">1️⃣</button><button onclick="addToTextareaAtCursorPos($('#command'), '2️⃣');" class="emoji">2️⃣</button>... - Repeat a player from another placeholder**
         </div>
         <span style="text-align: left">* Randomized whether a specific color represents girls or boys</span><br/>
-        <span style="text-align: left">** Useful when you want to repeat a player's name</span>
+        <span style="text-align: left">** Useful when you want to refer to a player from a previous placeholder to form a readable sentence</span>
         <p><textarea id="command" placeholder="Enter a dare" autocomplete="off" rows="4" cols="50" style="max-width: -moz-available;"></textarea></p>
         <p><button id="add-command-button">Add to the list</button>
         <button id="add-command-hide-button">Cancel</button></p>
