@@ -1,13 +1,14 @@
 package staticFunctions
 
 import (
+	"log"
+	"strings"
+	"time"
+
 	"github.com/gameraccoon/telegram-bot-skeleton/processing"
 	"github.com/gameraccoon/telegram-the-king-says-bot/database"
 	static "github.com/gameraccoon/telegram-the-king-says-bot/staticData"
 	"github.com/nicksnyder/go-i18n/i18n"
-	"log"
-	"strings"
-	"time"
 )
 
 func GetDb(staticData *processing.StaticProccessStructs) *database.GameDb {
@@ -170,25 +171,15 @@ func ConnectToSession(data *processing.ProcessData, token string) (successful bo
 	return true
 }
 
-func GetGenderNameFromId(gender int, trans i18n.TranslateFunc) string {
-	if gender == 1 {
-		return trans("gender_female")
-	} else if gender == 2 {
-		return trans("gender_male")
-	} else if gender == 3 {
-		return trans("gender_both")
+func GetRoleNameFromId(role int, trans i18n.TranslateFunc) string {
+	if role == 1 {
+		return trans("role_female")
+	} else if role == 2 {
+		return trans("role_male")
+	} else if role == 3 {
+		return trans("role_both")
 	} else {
-		return trans("gender_none")
-	}
-}
-
-func GetGenderPlaceholderFromId(gender int, trans i18n.TranslateFunc) string {
-	if gender == 1 {
-		return trans("gender_female")
-	} else if gender == 2 {
-		return trans("gender_male")
-	} else {
-		return trans("gender_any")
+		return trans("role_none")
 	}
 }
 
@@ -216,7 +207,7 @@ func FirstSetUpStep2(data *processing.ProcessData) {
 func FirstSetUpStep3(data *processing.ProcessData) {
 	db := GetDb(data.Static)
 	if !db.IsUserCompletedFTUE(data.UserId) {
-		data.SendDialog(data.Static.MakeDialogFn("gc", data.UserId, data.Trans, data.Static, nil))
+		data.SendDialog(data.Static.MakeDialogFn("rs", data.UserId, data.Trans, data.Static, nil))
 	}
 }
 

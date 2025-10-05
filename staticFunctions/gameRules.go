@@ -2,12 +2,13 @@ package staticFunctions
 
 import (
 	"fmt"
-	"github.com/gameraccoon/telegram-bot-skeleton/processing"
-	"github.com/gameraccoon/telegram-the-king-says-bot/database"
-	static "github.com/gameraccoon/telegram-the-king-says-bot/staticData"
 	"math/rand"
 	"sort"
 	"strings"
+
+	"github.com/gameraccoon/telegram-bot-skeleton/processing"
+	"github.com/gameraccoon/telegram-the-king-says-bot/database"
+	static "github.com/gameraccoon/telegram-the-king-says-bot/staticData"
 )
 
 const NumericPositionMatchTypeOffset = 100
@@ -19,9 +20,9 @@ func sendNumbers(staticData *processing.StaticProccessStructs, userIds []int64) 
 	femaleIdx := 0
 
 	for i, userId := range userIds {
-		gender := db.GetUserGender(userId)
+		role := db.GetUserRole(userId)
 
-		if gender == 0 {
+		if role == 0 {
 			continue
 		}
 
@@ -31,7 +32,7 @@ func sendNumbers(staticData *processing.StaticProccessStructs, userIds []int64) 
 			"Number": i + 1,
 		})
 
-		if gender&1 != 0 {
+		if role&1 != 0 {
 			if len(message) > 0 {
 				message += "\n"
 			}
@@ -41,7 +42,7 @@ func sendNumbers(staticData *processing.StaticProccessStructs, userIds []int64) 
 			femaleIdx++
 		}
 
-		if gender&2 != 0 {
+		if role&2 != 0 {
 			if len(message) > 0 {
 				message += "\n"
 			}
@@ -103,14 +104,14 @@ func appendMatches(matches *[]placeholderMatch, sequence []byte, placeholder *st
 }
 
 func appendOppositeMatches(matches *[]placeholderMatch, sequence []byte, placeholder *[2]static.PlaceholderInfo) {
-	var oppositeGendersIndexes [2]int
+	var oppositeRoleIndexes [2]int
 	if rand.Intn(2) == 0 {
-		oppositeGendersIndexes = [2]int{2, 1}
+		oppositeRoleIndexes = [2]int{2, 1}
 	} else {
-		oppositeGendersIndexes = [2]int{1, 2}
+		oppositeRoleIndexes = [2]int{1, 2}
 	}
 
-	for placeholderIdx, gender := range oppositeGendersIndexes {
+	for placeholderIdx, role := range oppositeRoleIndexes {
 		resp := placeholder[placeholderIdx].Matcher.Match(sequence)
 
 		for resp.HasNext() {
@@ -119,7 +120,7 @@ func appendOppositeMatches(matches *[]placeholderMatch, sequence []byte, placeho
 				*matches = append(*matches, placeholderMatch{
 					at:        itr.At - itr.KLen + 1,
 					len:       itr.KLen,
-					matchType: gender,
+					matchType: role,
 				})
 			}
 		}
@@ -162,7 +163,7 @@ func removeIntersectedMatches(matches *[]placeholderMatch) {
 
 func getAndRemoveParticipatingUserName(users *[]database.SessionUserInfo, matchType int) string {
 	for i, user := range *users {
-		if matchType == 0 || (matchType&user.Gender != 0) {
+		if matchType == 0 || (matchType&user.Role != 0) {
 			*users = append((*users)[:i], (*users)[i+1:]...)
 			return user.Name
 		}
@@ -289,7 +290,7 @@ func SendAdvancedCommand(staticData *processing.StaticProccessStructs, sessionId
 
 	participatingUsers := weightedShuffle(users)
 
-	// fill the names for the matches with specified genders
+	// fill the names for the matches with specified roles
 	for i, match := range matches {
 		if match.matchType == 1 || match.matchType == 2 {
 			matches[i].name = getAndRemoveParticipatingUserName(&participatingUsers, match.matchType)

@@ -1,85 +1,86 @@
 package dialogFactories
 
 import (
+	"strconv"
+
 	"github.com/gameraccoon/telegram-bot-skeleton/dialog"
 	"github.com/gameraccoon/telegram-bot-skeleton/dialogFactory"
 	"github.com/gameraccoon/telegram-bot-skeleton/processing"
 	"github.com/gameraccoon/telegram-the-king-says-bot/staticFunctions"
 	"github.com/nicksnyder/go-i18n/i18n"
-	"strconv"
 )
 
-type genderSelectVariantPrototype struct {
+type roleSelectVariantPrototype struct {
 	id      string
 	textId  string
 	process func(int64, *processing.ProcessData) bool
 	rowId   int
 }
 
-type genderSelectDialogFactory struct {
-	variants []genderSelectVariantPrototype
+type roleSelectDialogFactory struct {
+	variants []roleSelectVariantPrototype
 }
 
-func MakeGenderSelectDialogFactory() dialogFactory.DialogFactory {
-	return &(genderSelectDialogFactory{
-		variants: []genderSelectVariantPrototype{
-			genderSelectVariantPrototype{
+func MakeRoleSelectDialogFactory() dialogFactory.DialogFactory {
+	return &(roleSelectDialogFactory{
+		variants: []roleSelectVariantPrototype{
+			roleSelectVariantPrototype{
 				id:      "fe",
-				textId:  "gender_female",
-				process: selectGenderFemale,
+				textId:  "role_female",
+				process: selectRoleFemale,
 				rowId:   1,
 			},
-			genderSelectVariantPrototype{
+			roleSelectVariantPrototype{
 				id:      "ma",
-				textId:  "gender_male",
-				process: selectGenderMale,
+				textId:  "role_male",
+				process: selectRoleMale,
 				rowId:   1,
 			},
-			genderSelectVariantPrototype{
+			roleSelectVariantPrototype{
 				id:      "bo",
-				textId:  "gender_both",
-				process: selectGenderBoth,
+				textId:  "role_both",
+				process: selectRoleBoth,
 				rowId:   2,
 			},
-			genderSelectVariantPrototype{
+			roleSelectVariantPrototype{
 				id:      "no",
-				textId:  "gender_none",
-				process: selectGenderNone,
+				textId:  "role_none",
+				process: selectRoleNone,
 				rowId:   2,
 			},
 		},
 	})
 }
 
-func selectGenderFemale(sessionId int64, data *processing.ProcessData) bool {
+func selectRoleFemale(sessionId int64, data *processing.ProcessData) bool {
 	db := staticFunctions.GetDb(data.Static)
-	db.SetUserGender(data.UserId, 1)
-	data.SubstituteMessage(data.Trans("gender_changed"))
+	db.SetUserRole(data.UserId, 1)
+	data.SubstituteMessage(data.Trans("role_changed"))
 	return true
 }
 
-func selectGenderMale(sessionId int64, data *processing.ProcessData) bool {
+func selectRoleMale(sessionId int64, data *processing.ProcessData) bool {
 	db := staticFunctions.GetDb(data.Static)
-	db.SetUserGender(data.UserId, 2)
-	data.SubstituteMessage(data.Trans("gender_changed"))
+	db.SetUserRole(data.UserId, 2)
+	data.SubstituteMessage(data.Trans("role_changed"))
 	return true
 }
 
-func selectGenderBoth(sessionId int64, data *processing.ProcessData) bool {
+func selectRoleBoth(sessionId int64, data *processing.ProcessData) bool {
 	db := staticFunctions.GetDb(data.Static)
-	db.SetUserGender(data.UserId, 3)
-	data.SubstituteMessage(data.Trans("gender_changed"))
+	db.SetUserRole(data.UserId, 3)
+	data.SubstituteMessage(data.Trans("role_changed"))
 	return true
 }
 
-func selectGenderNone(sessionId int64, data *processing.ProcessData) bool {
+func selectRoleNone(sessionId int64, data *processing.ProcessData) bool {
 	db := staticFunctions.GetDb(data.Static)
-	db.SetUserGender(data.UserId, 0)
-	data.SubstituteMessage(data.Trans("gender_changed"))
+	db.SetUserRole(data.UserId, 0)
+	data.SubstituteMessage(data.Trans("role_changed"))
 	return true
 }
 
-func (factory *genderSelectDialogFactory) createVariants(trans i18n.TranslateFunc) (variants []dialog.Variant) {
+func (factory *roleSelectDialogFactory) createVariants(trans i18n.TranslateFunc) (variants []dialog.Variant) {
 	variants = make([]dialog.Variant, 0)
 
 	for _, variant := range factory.variants {
@@ -92,14 +93,14 @@ func (factory *genderSelectDialogFactory) createVariants(trans i18n.TranslateFun
 	return
 }
 
-func (factory *genderSelectDialogFactory) MakeDialog(userId int64, trans i18n.TranslateFunc, staticData *processing.StaticProccessStructs, customData interface{}) *dialog.Dialog {
+func (factory *roleSelectDialogFactory) MakeDialog(userId int64, trans i18n.TranslateFunc, staticData *processing.StaticProccessStructs, customData interface{}) *dialog.Dialog {
 	return &dialog.Dialog{
-		Text:     trans("select_gender"),
+		Text:     trans("select_role"),
 		Variants: factory.createVariants(trans),
 	}
 }
 
-func (factory *genderSelectDialogFactory) ProcessVariant(variantId string, additionalId string, data *processing.ProcessData) bool {
+func (factory *roleSelectDialogFactory) ProcessVariant(variantId string, additionalId string, data *processing.ProcessData) bool {
 	sessionId, _ := strconv.ParseInt(additionalId, 10, 64)
 	for _, variant := range factory.variants {
 		if variant.id == variantId {

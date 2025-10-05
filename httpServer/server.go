@@ -2,15 +2,16 @@ package httpServer
 
 import (
 	"fmt"
-	"github.com/gameraccoon/telegram-bot-skeleton/processing"
-	"github.com/gameraccoon/telegram-the-king-says-bot/database"
-	"github.com/gameraccoon/telegram-the-king-says-bot/staticFunctions"
 	"log"
 	"math/rand/v2"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/gameraccoon/telegram-bot-skeleton/processing"
+	"github.com/gameraccoon/telegram-the-king-says-bot/database"
+	"github.com/gameraccoon/telegram-the-king-says-bot/staticFunctions"
 )
 
 type webCaches struct {
@@ -114,24 +115,24 @@ func joinGame(w http.ResponseWriter, r *http.Request, db *database.GameDb, stati
 		return
 	}
 
-	gender := r.Form.Get("gender")
+	role := r.Form.Get("role")
 	// convert from string to int
-	genderInt := 0
-	if gender == "g" {
-		genderInt = 1
-	} else if gender == "b" {
-		genderInt = 2
-	} else if gender == "a" {
-		genderInt = 3
-	} else if gender != "n" {
-		genderInt = 0
+	roleInt := 0
+	if role == "g" {
+		roleInt = 1
+	} else if role == "b" {
+		roleInt = 2
+	} else if role == "a" {
+		roleInt = 3
+	} else if role != "n" {
+		roleInt = 0
 	} else {
-		http.Error(w, "Incorrect gender code", http.StatusBadRequest)
+		http.Error(w, "Incorrect role code", http.StatusBadRequest)
 	}
 
 	token := int64(rand.Uint64() & 0x7FFFFFFFFFFFFFFF)
 
-	hasAdded := db.AddWebUser(sessionId, token, name, genderInt)
+	hasAdded := db.AddWebUser(sessionId, token, name, roleInt)
 
 	if !hasAdded {
 		http.Error(w, "Can't add new user, try again", http.StatusBadRequest)

@@ -111,7 +111,7 @@ $(document).ready(function() {
 
     $('#join-btn').click(function() {
         var name = $('#name').val();
-        var gender = $('#gender').val();
+        var role = $('#role').val();
 
         if (name === "") {
             alert('Please enter your name');
@@ -119,7 +119,7 @@ $(document).ready(function() {
         }
 
         $('#status').html('<p class="info">Joining... please wait</p>');
-        $.post('/join', { gameId: gameId, name: name, gender: gender }, function(data) {
+        $.post('/join', { gameId: gameId, name: name, role: role }, function(data) {
             $('#status').html('<p class="info">Redirecting to the game... please wait</p>');
             window.location.href = '/user/' + data;
         }).fail(function(jqXHR, textStatus, errorThrown){
@@ -150,8 +150,8 @@ $(document).ready(function() {
 <div id="options" style="display: none;">
     <p>Choose your name</p>
     <input type="text" id="name" placeholder="Your name" maxlength="20">
-    <p>Choose your gender</p>
-    <select id="gender">
+    <p>Choose your role</p>
+    <select id="role">
         <option value="g">Girl</option>
         <option value="b">Boy</option>
         <option value="a">Both</option>

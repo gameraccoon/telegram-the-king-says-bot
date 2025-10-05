@@ -1,9 +1,10 @@
 package database
 
 import (
-	"github.com/stretchr/testify/require"
 	"os"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -201,7 +202,7 @@ func TestUserLanguage(t *testing.T) {
 	}
 }
 
-func TestUserGender(t *testing.T) {
+func TestUserRole(t *testing.T) {
 	assert := require.New(t)
 	db := createDbAndConnect(t)
 	defer clearDb()
@@ -214,18 +215,18 @@ func TestUserGender(t *testing.T) {
 	userId1 := db.GetOrCreateTelegramUserId(123, "", "")
 	userId2 := db.GetOrCreateTelegramUserId(321, "", "")
 
-	db.SetUserGender(userId1, 1)
+	db.SetUserRole(userId1, 1)
 
 	{
-		assert.Equal(1, db.GetUserGender(userId1))
-		assert.Equal(0, db.GetUserGender(userId2))
+		assert.Equal(1, db.GetUserRole(userId1))
+		assert.Equal(0, db.GetUserRole(userId2))
 	}
 
-	db.SetUserGender(userId2, 2)
+	db.SetUserRole(userId2, 2)
 
 	{
-		assert.Equal(1, db.GetUserGender(userId1))
-		assert.Equal(2, db.GetUserGender(userId2))
+		assert.Equal(1, db.GetUserRole(userId1))
+		assert.Equal(2, db.GetUserRole(userId2))
 	}
 }
 
@@ -404,9 +405,9 @@ func TestIdleCount(t *testing.T) {
 	defer db.Disconnect()
 
 	userId1 := db.GetOrCreateTelegramUserId(123, "", "a")
-	db.SetUserGender(userId1, 1)
+	db.SetUserRole(userId1, 1)
 	userId2 := db.GetOrCreateTelegramUserId(234, "", "b")
-	db.SetUserGender(userId2, 2)
+	db.SetUserRole(userId2, 2)
 
 	sessionId, _, _ := db.CreateSession(userId1)
 	db.ConnectToSession(userId2, sessionId)
@@ -464,7 +465,7 @@ func TestAddWebUser(t *testing.T) {
 			continue
 		}
 		assert.Equal("test name", db.GetUserName(user))
-		assert.Equal(2, db.GetUserGender(user))
+		assert.Equal(2, db.GetUserRole(user))
 		userSessionId, isInSession := db.GetUserSession(user)
 		assert.True(isInSession)
 		assert.Equal(sessionId, userSessionId)

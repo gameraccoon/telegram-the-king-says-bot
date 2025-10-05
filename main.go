@@ -2,6 +2,10 @@ package main
 
 import (
 	"encoding/json"
+	"io/ioutil"
+	"log"
+	"strings"
+
 	"github.com/gameraccoon/telegram-bot-skeleton/dialog"
 	"github.com/gameraccoon/telegram-bot-skeleton/dialogManager"
 	"github.com/gameraccoon/telegram-bot-skeleton/processing"
@@ -11,9 +15,6 @@ import (
 	"github.com/gameraccoon/telegram-the-king-says-bot/httpServer"
 	static "github.com/gameraccoon/telegram-the-king-says-bot/staticData"
 	"github.com/nicksnyder/go-i18n/i18n"
-	"io/ioutil"
-	"log"
-	"strings"
 )
 
 func init() {
@@ -105,7 +106,7 @@ func main() {
 	dialogManager := &(dialogManager.DialogManager{})
 	dialogManager.RegisterDialogFactory("us", dialogFactories.MakeUserSettingsDialogFactory())
 	dialogManager.RegisterDialogFactory("lc", dialogFactories.MakeLanguageSelectDialogFactory())
-	dialogManager.RegisterDialogFactory("gc", dialogFactories.MakeGenderSelectDialogFactory())
+	dialogManager.RegisterDialogFactory("rs", dialogFactories.MakeRoleSelectDialogFactory())
 	dialogManager.RegisterDialogFactory("se", dialogFactories.MakeSessionDialogFactory())
 	dialogManager.RegisterDialogFactory("ns", dialogFactories.MakeNoSessionDialogFactory())
 	dialogManager.RegisterDialogFactory("sc", dialogFactories.MakeSuggestedConfirmedDialogFactory())

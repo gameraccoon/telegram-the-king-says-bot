@@ -42,9 +42,9 @@ func MakeUserSettingsDialogFactory() dialogFactory.DialogFactory {
 				rowId:   2,
 			},
 			userSettingsVariantPrototype{
-				id:      "gend",
-				textId:  "change_gender",
-				process: changeGender,
+				id:      "role",
+				textId:  "change_role",
+				process: changeRole,
 				rowId:   3,
 			},
 		},
@@ -65,8 +65,8 @@ func changeLanguage(userId int64, data *processing.ProcessData) bool {
 	return true
 }
 
-func changeGender(userId int64, data *processing.ProcessData) bool {
-	data.SubstituteDialog(data.Static.MakeDialogFn("gc", data.UserId, data.Trans, data.Static, nil))
+func changeRole(userId int64, data *processing.ProcessData) bool {
+	data.SubstituteDialog(data.Static.MakeDialogFn("rs", data.UserId, data.Trans, data.Static, nil))
 	return true
 }
 
@@ -111,9 +111,9 @@ func (factory *userSettingsDialogFactory) MakeDialog(userId int64, trans i18n.Tr
 	}
 
 	translationMap := map[string]interface{}{
-		"Name":   db.GetUserName(userId),
-		"Lang":   langName,
-		"Gender": staticFunctions.GetGenderNameFromId(db.GetUserGender(userId), trans),
+		"Name": db.GetUserName(userId),
+		"Lang": langName,
+		"Role": staticFunctions.GetRoleNameFromId(db.GetUserRole(userId), trans),
 	}
 
 	return &dialog.Dialog{

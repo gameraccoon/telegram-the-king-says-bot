@@ -2,11 +2,12 @@ package database
 
 import (
 	"fmt"
-	dbBase "github.com/gameraccoon/telegram-bot-skeleton/database"
-	_ "github.com/mattn/go-sqlite3"
 	"log"
 	"strings"
 	"sync"
+
+	dbBase "github.com/gameraccoon/telegram-bot-skeleton/database"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 type GameDb struct {
@@ -333,14 +334,14 @@ func (database *GameDb) GetUserLanguage(userId int64) (language string) {
 	return
 }
 
-func (database *GameDb) SetUserGender(userId int64, gender int) {
+func (database *GameDb) SetUserRole(userId int64, role int) {
 	database.mutex.Lock()
 	defer database.mutex.Unlock()
 
-	database.db.Exec(fmt.Sprintf("UPDATE OR ROLLBACK users SET gender='%d' WHERE id=%d", gender, userId))
+	database.db.Exec(fmt.Sprintf("UPDATE OR ROLLBACK users SET gender='%d' WHERE id=%d", role, userId))
 }
 
-func (database *GameDb) GetUserGender(userId int64) (gender int) {
+func (database *GameDb) GetUserRole(userId int64) (role int) {
 	database.mutex.Lock()
 	defer database.mutex.Unlock()
 
@@ -356,7 +357,7 @@ func (database *GameDb) GetUserGender(userId int64) (gender int) {
 	}()
 
 	if rows.Next() {
-		err := rows.Scan(&gender)
+		err := rows.Scan(&role)
 		if err != nil {
 			log.Fatal(err.Error())
 		}
@@ -365,7 +366,7 @@ func (database *GameDb) GetUserGender(userId int64) (gender int) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		log.Printf("can't find gender for player %d", userId)
+		log.Printf("can't find role for player %d", userId)
 	}
 
 	return
@@ -774,7 +775,7 @@ type SessionUserInfo struct {
 	UserId                  int64
 	ChatId                  int64 // token for web users
 	Name                    string
-	Gender                  int
+	Role                    int
 	CurrentSessionIdleCount int
 	IsWebUser               bool
 }
@@ -800,7 +801,7 @@ func (database *GameDb) GetUsersInSessionInfo(sessionId int64) (users []SessionU
 	for rows.Next() {
 		var userInfo SessionUserInfo
 		var isWebUser int
-		err := rows.Scan(&userInfo.UserId, &userInfo.ChatId, &userInfo.Name, &userInfo.Gender, &userInfo.CurrentSessionIdleCount, &isWebUser)
+		err := rows.Scan(&userInfo.UserId, &userInfo.ChatId, &userInfo.Name, &userInfo.Role, &userInfo.CurrentSessionIdleCount, &isWebUser)
 		if err != nil {
 			log.Fatal(err.Error())
 		}
@@ -822,7 +823,7 @@ func (database *GameDb) UpdateUsersIdleCount(usersToIncrease []int64, countIncre
 	database.db.Exec(fmt.Sprintf("UPDATE OR ROLLBACK users SET current_session_idle_count='0' WHERE id IN (%s)", usersToResetIds))
 }
 
-func (database *GameDb) AddWebUser(sessionId int64, token int64, name string, gender int) (wasAdded bool) {
+func (database *GameDb) AddWebUser(sessionId int64, token int64, name string, role int) (wasAdded bool) {
 	database.mutex.Lock()
 	defer database.mutex.Unlock()
 
@@ -846,7 +847,7 @@ func (database *GameDb) AddWebUser(sessionId int64, token int64, name string, ge
 		log.Fatal(err.Error())
 	}
 
-	database.db.Exec(fmt.Sprintf("INSERT INTO users (name, gender, current_session, current_session_idle_count) VALUES ('%s', %d, %d, 0)", dbBase.SanitizeString(name), gender, sessionId))
+	database.db.Exec(fmt.Sprintf("INSERT INTO users (name, gender, current_session, current_session_idle_count) VALUES ('%s', %d, %d, 0)", dbBase.SanitizeString(name), role, sessionId))
 
 	userId := database.getLastInsertedItemId()
 
