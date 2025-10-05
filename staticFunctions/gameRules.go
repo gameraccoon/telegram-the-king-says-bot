@@ -193,6 +193,7 @@ func findMatches(staticData *processing.StaticProccessStructs, sequence []byte) 
 	appendOppositeMatches(&matches, sequence, &placeholders.Opposite)
 	appendRepeatedPositionMatches(&matches, sequence, &placeholders.Positions)
 
+	// sort to reduce the algorithmic complexity of removing intersections
 	sort.Slice(matches, func(i, j int) bool {
 		return matches[i].at > matches[j].at
 	})
@@ -284,7 +285,14 @@ func SendAdvancedCommand(staticData *processing.StaticProccessStructs, sessionId
 	sequence := []byte(command)
 	matches := findMatches(staticData, sequence)
 
+	// the players will be picked from the beginning first
+	// the users with higher weight are more likely to end up in the beginning
 	participatingUsers := weightedShuffle(users)
+
+	// randomize the order of picking for placeholders, to avoid any bias
+	// e.g. if we would keep it sorted from high to low, we would most likely pick
+	// the players with higher weights for the last placeholders in the command
+	rand.Shuffle(len(matches), func(i, j int) { matches[i], matches[j] = matches[j], matches[i] })
 
 	// fill the names for the matches with specified roles
 	for i, match := range matches {
@@ -306,6 +314,11 @@ func SendAdvancedCommand(staticData *processing.StaticProccessStructs, sessionId
 			matches[i].name = getNumericPlaceholderUserName(&matches, match.matchType)
 		}
 	}
+
+	// sort again, from higher to lower, to not shift the indexes while using them
+	sort.Slice(matches, func(i, j int) bool {
+		return matches[i].at > matches[j].at
+	})
 
 	// replace names in the string
 	for _, match := range matches {
