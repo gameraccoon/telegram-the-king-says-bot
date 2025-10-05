@@ -15,10 +15,11 @@ type PlaceholderInfo struct {
 }
 
 type PlaceholderInfos struct {
-	Male     PlaceholderInfo
-	Female   PlaceholderInfo
-	Common   PlaceholderInfo
-	Opposite [2]PlaceholderInfo
+	Male      PlaceholderInfo
+	Female    PlaceholderInfo
+	Common    PlaceholderInfo
+	Positions [10]PlaceholderInfo
+	Opposite  [2]PlaceholderInfo
 }
 
 type StaticConfiguration struct {
@@ -45,4 +46,14 @@ func (placeholders *PlaceholderInfos) Compile() {
 	compilePlaceholder(&placeholders.Common)
 	compilePlaceholder(&placeholders.Opposite[0])
 	compilePlaceholder(&placeholders.Opposite[1])
+	compilePlaceholder(&placeholders.Positions[0])
+	compilePlaceholder(&placeholders.Positions[1])
+	compilePlaceholder(&placeholders.Positions[2])
+	compilePlaceholder(&placeholders.Positions[3])
+	compilePlaceholder(&placeholders.Positions[4])
+	compilePlaceholder(&placeholders.Positions[5])
+	compilePlaceholder(&placeholders.Positions[6])
+	compilePlaceholder(&placeholders.Positions[7])
+	compilePlaceholder(&placeholders.Positions[8])
+	compilePlaceholder(&placeholders.Positions[9])
 }

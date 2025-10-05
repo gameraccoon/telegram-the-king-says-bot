@@ -10,6 +10,8 @@ import (
 	"strings"
 )
 
+const NumericPositionMatchTypeOffset = 100
+
 func sendNumbers(staticData *processing.StaticProccessStructs, userIds []int64) {
 	db := GetDb(staticData)
 
@@ -110,7 +112,6 @@ func appendOppositeMatches(matches *[]placeholderMatch, sequence []byte, placeho
 
 	for placeholderIdx, gender := range oppositeGendersIndexes {
 		resp := placeholder[placeholderIdx].Matcher.Match(sequence)
-		defer resp.Release()
 
 		for resp.HasNext() {
 			items := resp.NextMatchItem(sequence)
@@ -122,6 +123,31 @@ func appendOppositeMatches(matches *[]placeholderMatch, sequence []byte, placeho
 				})
 			}
 		}
+
+		resp.Release()
+	}
+}
+
+func appendRepeatedPositionMatches(matches *[]placeholderMatch, sequence []byte, placeholder *[10]static.PlaceholderInfo) {
+	for placeholderIdx := range placeholder {
+		if placeholderIdx >= len(*matches) {
+			break
+		}
+
+		resp := placeholder[placeholderIdx].Matcher.Match(sequence)
+
+		for resp.HasNext() {
+			items := resp.NextMatchItem(sequence)
+			for _, itr := range items {
+				*matches = append(*matches, placeholderMatch{
+					at:        itr.At - itr.KLen + 1,
+					len:       itr.KLen,
+					matchType: placeholderIdx + NumericPositionMatchTypeOffset,
+				})
+			}
+		}
+
+		resp.Release()
 	}
 }
 
@@ -144,6 +170,22 @@ func getAndRemoveParticipatingUserName(users *[]database.SessionUserInfo, matchT
 	return "[no match]"
 }
 
+func getNumericPlaceholderUserName(matches *[]placeholderMatch, matchType int) string {
+	index := 0
+	targetIndex := matchType - NumericPositionMatchTypeOffset
+	// matches are sorted from back to front, so reverse the order
+	for i := len(*matches) - 1; i >= 0; i -= 1 {
+		if (*matches)[i].matchType < NumericPositionMatchTypeOffset {
+			if index == targetIndex {
+				return (*matches)[i].name
+			}
+			index += 1
+		}
+	}
+
+	return "[bad number]"
+}
+
 func findMatches(staticData *processing.StaticProccessStructs, sequence []byte) []placeholderMatch {
 	placeholders := getPlaceholders(staticData)
 	matches := make([]placeholderMatch, 0)
@@ -152,6 +194,7 @@ func findMatches(staticData *processing.StaticProccessStructs, sequence []byte) 
 	appendMatches(&matches, sequence, &placeholders.Female, 1)
 	appendMatches(&matches, sequence, &placeholders.Male, 2)
 	appendOppositeMatches(&matches, sequence, &placeholders.Opposite)
+	appendRepeatedPositionMatches(&matches, sequence, &placeholders.Positions)
 
 	sort.Slice(matches, func(i, j int) bool {
 		return matches[i].at > matches[j].at
@@ -177,7 +220,7 @@ func getUserWeight(user *database.SessionUserInfo) int {
 
 func deleteUnordered(s *[]database.SessionUserInfo, i int) {
 	(*s)[i] = (*s)[len(*s)-1]
-	(*s) = (*s)[:len(*s)-1]
+	*s = (*s)[:len(*s)-1]
 }
 
 func weightedShuffle(users []database.SessionUserInfo) []database.SessionUserInfo {
@@ -188,7 +231,7 @@ func weightedShuffle(users []database.SessionUserInfo) []database.SessionUserInf
 	usersToDrawFrom := make([]database.SessionUserInfo, len(users))
 	copy(usersToDrawFrom, users)
 
-	result := []database.SessionUserInfo{}
+	var result []database.SessionUserInfo
 
 	sum := 0
 	for _, user := range usersToDrawFrom {
@@ -248,15 +291,22 @@ func SendAdvancedCommand(staticData *processing.StaticProccessStructs, sessionId
 
 	// fill the names for the matches with specified genders
 	for i, match := range matches {
-		if match.matchType != 0 {
+		if match.matchType == 1 || match.matchType == 2 {
 			matches[i].name = getAndRemoveParticipatingUserName(&participatingUsers, match.matchType)
 		}
 	}
 
 	// fill the names for all the others
 	for i, match := range matches {
-		if len(match.name) == 0 {
+		if len(match.name) == 0 && match.matchType < NumericPositionMatchTypeOffset {
 			matches[i].name = getAndRemoveParticipatingUserName(&participatingUsers, match.matchType)
+		}
+	}
+
+	// fill repeated indexes
+	for i, match := range matches {
+		if match.matchType >= NumericPositionMatchTypeOffset {
+			matches[i].name = getNumericPlaceholderUserName(&matches, match.matchType)
 		}
 	}
 
