@@ -1,6 +1,6 @@
 module github.com/gameraccoon/telegram-the-king-says-bot
 
-go 1.18
+go 1.21
 
 require (
 	github.com/gameraccoon/telegram-bot-skeleton v0.0.8

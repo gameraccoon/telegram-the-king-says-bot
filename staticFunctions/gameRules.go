@@ -157,12 +157,91 @@ func removeIntersectedMatches(matches *[]placeholderMatch) {
 	}
 }
 
-func getAndRemoveParticipatingUserName(users *[]database.SessionUserInfo, matchType int) string {
-	for i, user := range *users {
-		if matchType == 0 || (matchType&user.Role != 0) {
-			*users = append((*users)[:i], (*users)[i+1:]...)
-			return user.Name
+func getOtherMatchType(matchType int) int {
+	if matchType == 1 {
+		return 2
+	} else {
+		return 1
+	}
+}
+
+func canSafelyConsume(userRole int, requiredRole int, userRolesLeft *[4]int, requiredRoleLeft *[3]int) bool {
+	// exactly matching roles are always filled immediately
+	if (requiredRole == 0 || requiredRole == 1 || requiredRole == 2) && requiredRole == userRole {
+		return true
+	}
+
+	if requiredRole == 1 || requiredRole == 2 {
+		// "both" role is taken only if it's not needed for any other role
+		// to complete the last missing placeholder
+		if userRole == 3 {
+			otherMatchType := getOtherMatchType(requiredRole)
+			// if there is more than enough users of the other role, or barely enough users of this role, fill in the role
+			missingPlayersOtherRole := max(0, requiredRoleLeft[otherMatchType]-userRolesLeft[otherMatchType])
+			missingPlayersOurRole := max(0, requiredRoleLeft[requiredRole]-userRolesLeft[requiredRole])
+
+			// if we satisfy the other role, will we be missing players to fully fill our role
+			if missingPlayersOurRole > 0 && userRolesLeft[3]-missingPlayersOtherRole < missingPlayersOurRole {
+				// if we ignore players in this case, no role will draw them in the end (soft locking)
+				return true
+			}
+
+			// can we satisfy the other role even if we draw this player for this role
+			if (userRolesLeft[3]-1)-max(0, missingPlayersOurRole-1) >= missingPlayersOtherRole {
+				return true
+			}
+
+			// otherwise keep it for the placeholder of the other role
+			return false
 		}
+	} else if requiredRole == 0 {
+		missingPlayersRoleZero := max(0, requiredRoleLeft[0]-userRolesLeft[0])
+		missingPlayersRoleOne := max(0, requiredRoleLeft[1]-userRolesLeft[1])
+		missingPlayersRoleTwo := max(0, requiredRoleLeft[2]-userRolesLeft[2])
+		excessPlayerRoleOne := max(0, userRolesLeft[1]-requiredRoleLeft[1])
+		excessPlayerRoleTwo := max(0, userRolesLeft[2]-requiredRoleLeft[2])
+
+		// if we are going to have roles that can't be fulfilled, and taking this player
+		// won't increase the amount of missing players in the end, take it
+		// this makes it that we don't have biases towards which roles left empty in the end
+		if missingPlayersRoleZero > 0 && missingPlayersRoleZero+missingPlayersRoleOne+missingPlayersRoleTwo > userRolesLeft[3]+excessPlayerRoleOne+excessPlayerRoleTwo {
+			return true
+		}
+
+		// for placeholders without role, we fill them with players having roles only
+		// if we have enough players to fill the remaining placeholders with roles
+		// or if consuming that player won't change the amount of missing players
+		if userRole == 3 {
+			// are all the other roles still going to be fulfilled if we take this player
+			return userRolesLeft[3] > missingPlayersRoleOne+missingPlayersRoleTwo
+		} else {
+			if userRole == 1 {
+				return userRolesLeft[1]+userRolesLeft[3] > requiredRoleLeft[1]
+			} else if userRole == 2 {
+				return userRolesLeft[2]+userRolesLeft[3] > requiredRoleLeft[2]
+			}
+		}
+	}
+
+	return false
+}
+
+func consumeFirstMatchingParticipatingUserName(users *[]database.SessionUserInfo, requiredRole int, userRolesLeft *[4]int, requiredRoleLeft *[3]int) string {
+	for i, user := range *users {
+		if canSafelyConsume(user.Role, requiredRole, userRolesLeft, requiredRoleLeft) {
+			requiredRoleLeft[requiredRole] -= 1
+			userRolesLeft[user.Role] -= 1
+			return consumeParticipatingUserName(users, i)
+		}
+	}
+	return "[no match]"
+}
+
+func consumeParticipatingUserName(users *[]database.SessionUserInfo, index int) string {
+	if index >= 0 && index < len(*users) {
+		user := (*users)[index]
+		*users = append((*users)[:index], (*users)[index+1:]...)
+		return user.Name
 	}
 	return "[no match]"
 }
@@ -294,19 +373,34 @@ func SendAdvancedCommand(staticData *processing.StaticProccessStructs, sessionId
 	// the players with higher weights for the last placeholders in the command
 	rand.Shuffle(len(matches), func(i, j int) { matches[i], matches[j] = matches[j], matches[i] })
 
-	// fill the names for the matches with specified roles
-	for i, match := range matches {
-		if match.matchType == 1 || match.matchType == 2 {
-			matches[i].name = getAndRemoveParticipatingUserName(&participatingUsers, match.matchType)
+	// collect the users of available roles and the requirements to fill
+	userRolesLeft := [4]int{0, 0, 0, 0}
+	for _, user := range participatingUsers {
+		if user.Role > 3 {
+			panic("User role out of bounds")
+		}
+		userRolesLeft[user.Role] += 1
+	}
+	requiredRoleLeft := [3]int{0, 0, 0}
+	for _, match := range matches {
+		if match.matchType < 3 {
+			requiredRoleLeft[match.matchType] += 1
 		}
 	}
 
-	// fill the names for all the others
+	// fill the names for the matches
 	for i, match := range matches {
-		if len(match.name) == 0 && match.matchType < NumericPositionMatchTypeOffset {
-			matches[i].name = getAndRemoveParticipatingUserName(&participatingUsers, match.matchType)
+		if match.matchType < 3 {
+			matches[i].name = consumeFirstMatchingParticipatingUserName(&participatingUsers, match.matchType, &userRolesLeft, &requiredRoleLeft)
 		}
 	}
+
+	// sort again, from higher to lower
+	// 1. to not shift the next indexes while replacing placeholders with the names
+	// 2. to fill repeated indexes correctly
+	sort.Slice(matches, func(i, j int) bool {
+		return matches[i].at > matches[j].at
+	})
 
 	// fill repeated indexes
 	for i, match := range matches {
@@ -314,11 +408,6 @@ func SendAdvancedCommand(staticData *processing.StaticProccessStructs, sessionId
 			matches[i].name = getNumericPlaceholderUserName(&matches, match.matchType)
 		}
 	}
-
-	// sort again, from higher to lower, to not shift the indexes while using them
-	sort.Slice(matches, func(i, j int) bool {
-		return matches[i].at > matches[j].at
-	})
 
 	// replace names in the string
 	for _, match := range matches {
