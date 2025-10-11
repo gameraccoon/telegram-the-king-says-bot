@@ -307,11 +307,16 @@ $(document).ready(function() {
             <button onclick="addToTextareaAtCursorPos($('#command'), '🎲');" class="emoji">🎲</button> - Random player<br/>
             <button onclick="addToTextareaAtCursorPos($('#command'), '🎩');" class="emoji">🎩</button> - Random boy<br/>
             <button onclick="addToTextareaAtCursorPos($('#command'), '👒');" class="emoji">👒</button> - Random girl<br/>
-            <button onclick="addToTextareaAtCursorPos($('#command'), '💙');" class="emoji">💙</button><button onclick="addToTextareaAtCursorPos($('#command'), '❤️');" class="emoji">❤️</button> - Two random players of opposite roles*<br/>
-            <button onclick="addToTextareaAtCursorPos($('#command'), '1️⃣');" class="emoji">1️⃣</button><button onclick="addToTextareaAtCursorPos($('#command'), '2️⃣');" class="emoji">2️⃣</button>... - Repeat a player from another placeholder**
+            <button onClick="$('#advanced-commands').show();$('#advanced-commands-hints').show();$('#show-advanced-button').hide();" id="show-advanced-button">Show advanced</button>
+            <div id="advanced-commands" style="display: none;">
+                <button onclick="addToTextareaAtCursorPos($('#command'), '💙');" class="emoji">💙</button><button onclick="addToTextareaAtCursorPos($('#command'), '❤️');" class="emoji">❤️</button> - Two random players of opposite roles*<br/>
+                <button onclick="addToTextareaAtCursorPos($('#command'), '1️⃣');" class="emoji">1️⃣</button><button onclick="addToTextareaAtCursorPos($('#command'), '2️⃣');" class="emoji">2️⃣</button>... - Repeat a player from another placeholder**
+            </div>
         </div>
-        <span style="text-align: left">* Randomized whether a specific color represents girls or boys</span><br/>
-        <span style="text-align: left">** Useful when you want to refer to a player from a previous placeholder to form a readable sentence</span>
+        <div id="advanced-commands-hints" style="display: none;">
+            <span style="text-align: left">* Randomized whether a specific color represents girls or boys</span><br/>
+            <span style="text-align: left">** Useful when you want to refer to a player from a previous placeholder to form a readable sentence</span>
+        </div>
         <p><textarea id="command" placeholder="Enter a dare" autocomplete="off" rows="4" cols="50" style="max-width: -moz-available;"></textarea></p>
         <p><button id="add-command-button">Add to the list</button>
         <button id="add-command-hide-button">Cancel</button></p>
