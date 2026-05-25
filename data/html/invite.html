@@ -106,7 +106,7 @@ $(document).ready(function() {
     });
 
     $('#open-in-telegram').click(function() {
-        window.location.href = 'https://telegram.me/TheKingSaysBot?start=' + gameId;
+        window.location.href = 'https://telegram.me/{{.bot_name}}?start=' + gameId;
     });
 
     $('#join-btn').click(function() {
